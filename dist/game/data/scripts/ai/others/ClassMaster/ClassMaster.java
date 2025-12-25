@@ -318,6 +318,11 @@ public class ClassMaster extends Script implements IXmlReader
 				}
 				break;
 			}
+			case "directthirdclass":
+			{
+				htmltext = getDirectThirdOccupationChangeHtml(player);
+				break;
+			}
 			case "awaken":
 			{
 				if (player.isInCategory(CategoryType.FOURTH_CLASS_GROUP) && (player.getLevel() > 84))
@@ -349,7 +354,11 @@ public class ClassMaster extends Script implements IXmlReader
 				
 				final int classId = Integer.parseInt(st.nextToken());
 				boolean canChange = false;
-				if ((player.isInCategory(CategoryType.SECOND_CLASS_GROUP) || player.isInCategory(CategoryType.FIRST_CLASS_GROUP)) && (player.getLevel() >= 40)) // In retail you can skip first occupation
+				if (player.isInCategory(CategoryType.FIRST_CLASS_GROUP) && CategoryData.getInstance().isInCategory(CategoryType.FOURTH_CLASS_GROUP, classId))
+				{
+					canChange = true;
+				}
+				else if ((player.isInCategory(CategoryType.SECOND_CLASS_GROUP) || player.isInCategory(CategoryType.FIRST_CLASS_GROUP)) && (player.getLevel() >= 40)) // In retail you can skip first occupation
 				{
 					canChange = CategoryData.getInstance().isInCategory(CategoryType.THIRD_CLASS_GROUP, classId) || (player.isInCategory(CategoryType.FIRST_CLASS_GROUP) && CategoryData.getInstance().isInCategory(CategoryType.SECOND_CLASS_GROUP, classId));
 				}
@@ -505,6 +514,110 @@ public class ClassMaster extends Script implements IXmlReader
 			}
 		}
 		
+		return htmltext;
+	}
+
+	private String getDirectThirdOccupationChangeHtml(Player player)
+	{
+		String htmltext = null;
+		if (player.isInCategory(CategoryType.FIRST_CLASS_GROUP))
+		{
+			switch (player.getPlayerClass())
+			{
+				case FIGHTER:
+				{
+					htmltext = "direct_third_human_fighter.html";
+					break;
+				}
+				case MAGE:
+				{
+					htmltext = "direct_third_human_mystic.html";
+					break;
+				}
+				case ELVEN_FIGHTER:
+				{
+					htmltext = "direct_third_elven_fighter.html";
+					break;
+				}
+				case ELVEN_MAGE:
+				{
+					htmltext = "direct_third_elven_mystic.html";
+					break;
+				}
+				case DARK_FIGHTER:
+				{
+					htmltext = "direct_third_dark_fighter.html";
+					break;
+				}
+				case DARK_MAGE:
+				{
+					htmltext = "direct_third_dark_mystic.html";
+					break;
+				}
+				case ORC_FIGHTER:
+				{
+					htmltext = "direct_third_orc_fighter.html";
+					break;
+				}
+				case ORC_MAGE:
+				{
+					htmltext = "direct_third_orc_mystic.html";
+					break;
+				}
+				case DWARVEN_FIGHTER:
+				{
+					htmltext = "direct_third_dwarven_fighter.html";
+					break;
+				}
+				case MALE_SOLDIER:
+				{
+					htmltext = "direct_third_kamael_male.html";
+					break;
+				}
+				case FEMALE_SOLDIER:
+				{
+					htmltext = "direct_third_kamael_female.html";
+					break;
+				}
+				case ERTHEIA_FIGHTER:
+				{
+					htmltext = "direct_third_ertheia_fighter.html";
+					break;
+				}
+				case ERTHEIA_WIZARD:
+				{
+					htmltext = "direct_third_ertheia_wizard.html";
+					break;
+				}
+				case DEATH_SOLDIER:
+				{
+					htmltext = "direct_third_death_soldier.html";
+					break;
+				}
+				case DWARF_MAKER:
+				{
+					htmltext = "direct_third_dwarf_maker.html";
+					break;
+				}
+			}
+		}
+		else if (player.isInCategory(CategoryType.SECOND_CLASS_GROUP))
+		{
+			htmltext = "direct_third_invalid.html";
+		}
+		else if (player.isInCategory(CategoryType.THIRD_CLASS_GROUP))
+		{
+			htmltext = "test_server_helper010.html";
+		}
+		else if (player.isInCategory(CategoryType.FOURTH_CLASS_GROUP))
+		{
+			htmltext = "test_server_helper011.html";
+		}
+		else if (player.isInCategory(CategoryType.SIXTH_CLASS_GROUP))
+		{
+			htmltext = "test_server_helper011a.html";
+		}
+
 		return htmltext;
 	}
 	
