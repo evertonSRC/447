@@ -93,7 +93,8 @@ public class ExRequestClassChange extends ClientPacket
 			}
 		}
 		
-		if (!canChange //
+		final boolean directThirdClass = player.isInCategory(CategoryType.FIRST_CLASS_GROUP) && CategoryData.getInstance().isInCategory(CategoryType.FOURTH_CLASS_GROUP, _classId);
+		if (!canChange && !directThirdClass //
 			&& (_classId != 170) && (player.getPlayerClass().getId() != 133)) // Female Soul Hound fix.
 		{
 			PacketLogger.warning(player + " tried to change class from " + player.getPlayerClass() + " to " + PlayerClass.getPlayerClass(_classId) + "!");
@@ -103,7 +104,11 @@ public class ExRequestClassChange extends ClientPacket
 		// Check for player proper class group and level.
 		canChange = false;
 		final int playerLevel = player.getLevel();
-		if (player.isInCategory(CategoryType.FIRST_CLASS_GROUP) && (playerLevel >= 18))
+		if (directThirdClass)
+		{
+			canChange = true;
+		}
+		else if (player.isInCategory(CategoryType.FIRST_CLASS_GROUP) && (playerLevel >= 18))
 		{
 			canChange = CategoryData.getInstance().isInCategory(player.getRace() == Race.ERTHEIA ? CategoryType.THIRD_CLASS_GROUP : CategoryType.SECOND_CLASS_GROUP, _classId);
 		}
