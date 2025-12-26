@@ -1018,6 +1018,7 @@ public class Player extends Playable
 	private final AutoUseSettingsHolder _autoUseSettings = new AutoUseSettingsHolder();
 	private final AtomicBoolean _autoPlaying = new AtomicBoolean();
 	private boolean _resumedAutoPlay = false;
+	private AbnormalVisualEffect _autoPlayAbnormalEffect = null;
 	
 	private ScheduledFuture<?> _timedHuntingZoneTask = null;
 	
@@ -16371,6 +16372,34 @@ public class Player extends Playable
 	{
 		return _autoPlaying.get();
 	}
+
+	public boolean canUseAutoPlay(boolean notify)
+	{
+		if (!GeneralConfig.ENABLE_AUTO_PLAY)
+		{
+			return false;
+		}
+		
+		if (GeneralConfig.PREMIUM_ONLY_AUTO_PLAY && !hasPremiumStatus())
+		{
+			if (notify)
+			{
+				sendMessage("Auto play is available only for premium accounts.");
+			}
+			return false;
+		}
+		
+		if (GeneralConfig.AUTO_PLAY_ITEM_REQUIRED && (getInventory().getItemByItemId(GeneralConfig.AUTO_PLAY_REQUIRED_ITEM_ID) == null))
+		{
+			if (notify)
+			{
+				sendMessage("Auto play requires item " + GeneralConfig.AUTO_PLAY_REQUIRED_ITEM_ID + " in your inventory.");
+			}
+			return false;
+		}
+		
+		return true;
+	}
 	
 	public void setResumedAutoPlay(boolean value)
 	{
@@ -16380,6 +16409,26 @@ public class Player extends Playable
 	public boolean hasResumedAutoPlay()
 	{
 		return _resumedAutoPlay;
+	}
+
+	public void applyAutoPlayAbnormalEffect()
+	{
+		if ((_autoPlayAbnormalEffect != null) || GeneralConfig.AUTO_PLAY_ABNORMAL_EFFECTS.isEmpty())
+		{
+			return;
+		}
+		
+		_autoPlayAbnormalEffect = GeneralConfig.AUTO_PLAY_ABNORMAL_EFFECTS.get(Rnd.get(GeneralConfig.AUTO_PLAY_ABNORMAL_EFFECTS.size()));
+		getEffectList().startAbnormalVisualEffect(_autoPlayAbnormalEffect);
+	}
+	
+	public void clearAutoPlayAbnormalEffect()
+	{
+		if (_autoPlayAbnormalEffect != null)
+		{
+			getEffectList().stopAbnormalVisualEffect(_autoPlayAbnormalEffect);
+			_autoPlayAbnormalEffect = null;
+		}
 	}
 	
 	public void restoreAutoSettings()
@@ -16396,7 +16445,11 @@ public class Player extends Playable
 		}
 		
 		final int options = settings.get(0);
-		final boolean active = GeneralConfig.RESUME_AUTO_PLAY && (settings.get(1) == 1);
+		boolean active = GeneralConfig.RESUME_AUTO_PLAY && (settings.get(1) == 1);
+		if (active && !canUseAutoPlay(false))
+		{
+			active = false;
+		}
 		final boolean pickUp = settings.get(2) == 1;
 		final int nextTargetMode = settings.get(3);
 		final boolean shortRange = settings.get(4) == 1;

@@ -83,6 +83,8 @@ public class EffectList
 	private final Set<AbnormalType> _blockedAbnormalTypes = EnumSet.noneOf(AbnormalType.class);
 	/** Set containing all abnormal visual effects this creature currently displays. */
 	private Set<AbnormalVisualEffect> _abnormalVisualEffects = EnumSet.noneOf(AbnormalVisualEffect.class);
+	/** Set containing abnormal visual effects manually applied outside of buffs. */
+	private final Set<AbnormalVisualEffect> _manualAbnormalVisualEffects = EnumSet.noneOf(AbnormalVisualEffect.class);
 	/** Short buff skill ID. */
 	private BuffInfo _shortBuff = null;
 	/** Count of specific types of buffs. */
@@ -1218,6 +1220,7 @@ public class EffectList
 	{
 		for (AbnormalVisualEffect ave : aves)
 		{
+			_manualAbnormalVisualEffects.add(ave);
 			_abnormalVisualEffects.add(ave);
 		}
 		
@@ -1232,6 +1235,7 @@ public class EffectList
 	{
 		for (AbnormalVisualEffect ave : aves)
 		{
+			_manualAbnormalVisualEffects.remove(ave);
 			_abnormalVisualEffects.remove(ave);
 		}
 		
@@ -1299,7 +1303,6 @@ public class EffectList
 					for (AbnormalVisualEffect ave : skill.getAbnormalVisualEffects())
 					{
 						abnormalVisualEffectFlags.add(ave);
-						_abnormalVisualEffects.add(ave);
 					}
 					
 					if (broadcast)
@@ -1328,7 +1331,6 @@ public class EffectList
 					for (AbnormalVisualEffect ave : skill.getAbnormalVisualEffects())
 					{
 						abnormalVisualEffectFlags.add(ave);
-						_abnormalVisualEffects.add(ave);
 					}
 					
 					if (broadcast)
@@ -1342,6 +1344,7 @@ public class EffectList
 		// Replace the old flags with the new flags.
 		_effectFlags = flags;
 		_stackedEffects = abnormalTypeFlags;
+		abnormalVisualEffectFlags.addAll(_manualAbnormalVisualEffects);
 		
 		// Unhide the selected buffs.
 		unhideBuffs.forEach(b ->

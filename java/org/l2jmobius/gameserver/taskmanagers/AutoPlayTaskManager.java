@@ -76,7 +76,7 @@ public class AutoPlayTaskManager
 			
 			PLAY: for (Player player : _players)
 			{
-				if (!player.isOnline() || (player.isInOfflineMode() && !player.isOfflinePlay()) || !GeneralConfig.ENABLE_AUTO_PLAY)
+				if (!player.isOnline() || (player.isInOfflineMode() && !player.isOfflinePlay()) || !player.canUseAutoPlay(false))
 				{
 					stopAutoPlay(player);
 					continue PLAY;
@@ -333,6 +333,12 @@ public class AutoPlayTaskManager
 	
 	public synchronized void startAutoPlay(Player player)
 	{
+		if (!player.canUseAutoPlay(true))
+		{
+			stopAutoPlay(player);
+			return;
+		}
+		
 		for (Set<Player> pool : POOLS)
 		{
 			if (pool.contains(player))
@@ -342,6 +348,7 @@ public class AutoPlayTaskManager
 		}
 		
 		player.setAutoPlaying(true);
+		player.applyAutoPlayAbnormalEffect();
 		
 		for (Set<Player> pool : POOLS)
 		{
@@ -367,6 +374,7 @@ public class AutoPlayTaskManager
 			if (pool.remove(player))
 			{
 				player.setAutoPlaying(false);
+				player.clearAutoPlayAbnormalEffect();
 				
 				// Pets must follow their owner.
 				if (player.hasServitors())
