@@ -5946,25 +5946,6 @@ public class Player extends Playable
 				{
 					setPkKills(getPkKills() + 1);
 					setTotalKills(getTotalKills() + 1);
-					
-					// Einhasad debuffs.
-					if (_pkKills > 9)
-					{
-						SkillCaster.triggerCast(this, this, CommonSkill.EINHASAD_OVERSEEING_4.getSkill());
-						SkillCaster.triggerCast(this, this, CommonSkill.EINHASAD_CHAINS.getSkill());
-					}
-					else if (_pkKills > 7)
-					{
-						SkillCaster.triggerCast(this, this, CommonSkill.EINHASAD_OVERSEEING_3.getSkill());
-					}
-					else if (_pkKills > 5)
-					{
-						SkillCaster.triggerCast(this, this, CommonSkill.EINHASAD_OVERSEEING_2.getSkill());
-					}
-					else if (_pkKills > 3)
-					{
-						SkillCaster.triggerCast(this, this, CommonSkill.EINHASAD_OVERSEEING_1.getSkill());
-					}
 				}
 			}
 		}
