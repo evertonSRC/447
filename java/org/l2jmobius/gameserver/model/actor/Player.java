@@ -5947,23 +5947,6 @@ public class Player extends Playable
 					setPkKills(getPkKills() + 1);
 					setTotalKills(getTotalKills() + 1);
 					
-					// Teleport to Prison.
-					if ((_pkKills >= 10) && (_pkKills < 35))
-					{
-						teleToLocation(61414, -42632, -2992);
-						getVariables().set(PlayerVariables.PRISON_WAIT_TIME, System.currentTimeMillis() + 18000000);
-					}
-					else if ((_pkKills >= 35) && (_pkKills < 40))
-					{
-						teleToLocation(59147, -42547, -3000);
-						getVariables().set(PlayerVariables.PRISON_WAIT_TIME, System.currentTimeMillis() + 14400000);
-					}
-					else if (_pkKills >= 40)
-					{
-						teleToLocation(58969, -44995, -2992);
-						getVariables().set(PlayerVariables.PRISON_WAIT_TIME, System.currentTimeMillis() + 10800000);
-					}
-					
 					// Einhasad debuffs.
 					if (_pkKills > 9)
 					{

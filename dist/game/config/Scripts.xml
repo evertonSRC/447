@@ -3,7 +3,7 @@
 	<!-- Skip these filenames from script loading, because they are already loaded using a different way. -->
 	<exclude file="package-info.java" />
 	<exclude file="handlers" />
-	<exclude file="{ai/others/PrisonManager/PrisonManager.java}" />
+	<exclude file="ai/others/PrisonManager" />
 	<!--
 	With this file you can exclude/include specific folders/files from within the scripts directory.
 	
