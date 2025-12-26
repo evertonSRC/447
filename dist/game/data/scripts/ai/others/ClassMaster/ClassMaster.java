@@ -354,7 +354,9 @@ public class ClassMaster extends Script implements IXmlReader
 				
 				final int classId = Integer.parseInt(st.nextToken());
 				boolean canChange = false;
-				if (player.isInCategory(CategoryType.FIRST_CLASS_GROUP) && CategoryData.getInstance().isInCategory(CategoryType.FOURTH_CLASS_GROUP, classId))
+				if (player.isInCategory(CategoryType.FIRST_CLASS_GROUP)
+					&& (CategoryData.getInstance().isInCategory(CategoryType.FOURTH_CLASS_GROUP, classId)
+						|| CategoryData.getInstance().isInCategory(CategoryType.SIXTH_CLASS_GROUP, classId)))
 				{
 					canChange = true;
 				}
