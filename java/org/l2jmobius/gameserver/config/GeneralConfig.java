@@ -21,7 +21,9 @@
 package org.l2jmobius.gameserver.config;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -176,6 +178,10 @@ public class GeneralConfig
 	public static boolean ENABLE_AUTO_ITEM;
 	public static boolean RESUME_AUTO_PLAY;
 	public static boolean ENABLE_AUTO_ASSIST;
+	public static boolean PREMIUM_ONLY_AUTO_PLAY;
+	public static boolean AUTO_PLAY_ITEM_REQUIRED;
+	public static final int AUTO_PLAY_REQUIRED_ITEM_ID = 82070;
+	public static List<AbnormalVisualEffect> AUTO_PLAY_ABNORMAL_EFFECTS = new ArrayList<>();
 	public static AbnormalVisualEffect BLUE_TEAM_ABNORMAL_EFFECT;
 	public static AbnormalVisualEffect RED_TEAM_ABNORMAL_EFFECT;
 	
@@ -348,6 +354,17 @@ public class GeneralConfig
 		ENABLE_AUTO_ITEM = config.getBoolean("EnableAutoItem", true);
 		RESUME_AUTO_PLAY = config.getBoolean("ResumeAutoPlay", false);
 		ENABLE_AUTO_ASSIST = config.getBoolean("AssistLeader", false);
+		PREMIUM_ONLY_AUTO_PLAY = config.getBoolean("PremiumOnlyAutoPlay", false);
+		AUTO_PLAY_ITEM_REQUIRED = config.getBoolean("AutoPlayItemRequired", false);
+		AUTO_PLAY_ABNORMAL_EFFECTS.clear();
+		final String autoPlayAbnormalEffects = config.getString("AutoPlayAbnormalEffect", "").trim();
+		if (!autoPlayAbnormalEffects.isEmpty())
+		{
+			for (String ave : autoPlayAbnormalEffects.split(","))
+			{
+				AUTO_PLAY_ABNORMAL_EFFECTS.add(Enum.valueOf(AbnormalVisualEffect.class, ave.trim()));
+			}
+		}
 		BLUE_TEAM_ABNORMAL_EFFECT = null;
 		final String blueTeamAve = config.getString("BlueTeamAbnormalEffect", "").trim();
 		if (!blueTeamAve.isEmpty())

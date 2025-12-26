@@ -76,6 +76,11 @@ public class ExAutoPlaySetting extends ClientPacket
 			return;
 		}
 		
+		if (_active && !player.canUseAutoPlay(true))
+		{
+			_active = false;
+		}
+		
 		player.sendPacket(new ExAutoPlaySettingSend(_options, _active, _pickUp, _nextTargetMode, _shortRange, _potionPercent, _respectfulHunting, _macroIndex));
 		player.getAutoPlaySettings().setAutoPotionPercent(_potionPercent);
 		
