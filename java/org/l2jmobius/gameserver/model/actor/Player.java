@@ -16393,7 +16393,7 @@ public class Player extends Playable
 		{
 			if (notify)
 			{
-				sendMessage("Auto play requires item " + GeneralConfig.AUTO_PLAY_REQUIRED_ITEM_ID + " in your inventory.");
+				sendMessage("Auto Hunt requires Auto Hunt License Rune ( " + GeneralConfig.AUTO_PLAY_REQUIRED_ITEM_ID + " ) in your inventory.");
 			}
 			return false;
 		}
