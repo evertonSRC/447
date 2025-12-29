@@ -17,12 +17,18 @@
 package handlers.communityboard;
 
 import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.data.sql.BaseAttributeBonusTable;
+import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
 import org.l2jmobius.gameserver.handler.IParseBoardHandler;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.holders.player.BaseAttributeBonusHolder;
+import org.l2jmobius.gameserver.model.item.ItemTemplate;
+import org.l2jmobius.gameserver.model.item.enums.ItemProcessType;
 import org.l2jmobius.gameserver.model.stats.BaseStat;
+import org.l2jmobius.gameserver.network.serverpackets.HennaInfo;
+import org.l2jmobius.gameserver.util.FormatUtil;
 
 public class BaseAttributeBoard implements IParseBoardHandler
 {
@@ -49,6 +55,10 @@ public class BaseAttributeBoard implements IParseBoardHandler
 			if ((parts.length >= 3) && "add".equalsIgnoreCase(parts[1]))
 			{
 				message = handleAdd(player, parts[2]);
+			}
+			else if ((parts.length >= 2) && "reset".equalsIgnoreCase(parts[1]))
+			{
+				message = handleReset(player);
 			}
 		}
 		
@@ -82,8 +92,39 @@ public class BaseAttributeBoard implements IParseBoardHandler
 		bonusHolder.addBonus(stat, 1);
 		BaseAttributeBonusTable.getInstance().saveBonuses(player.getObjectId(), player.isDualClassActive(), bonusHolder);
 		player.getStat().recalculateStats(false);
+		player.sendPacket(new HennaInfo(player));
 		player.broadcastUserInfo();
 		return "";
+	}
+	
+	private String handleReset(Player player)
+	{
+		final BaseAttributeBonusHolder bonusHolder = player.getActiveBaseAttributeBonusHolder();
+		if (bonusHolder.getTotalUsed() <= 0)
+		{
+			return "Você não possui bônus para resetar.";
+		}
+		
+		if (PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_ID > 0 && PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_COUNT > 0)
+		{
+			final long count = player.getInventory().getInventoryItemCount(PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_ID, -1);
+			if (count < PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_COUNT)
+			{
+				return "Você precisa de " + FormatUtil.formatAdena(PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_COUNT) + " " + getResetItemName() + " para resetar.";
+			}
+			
+			if (!player.destroyItemByItemId(ItemProcessType.FEE, PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_ID, PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_COUNT, player, true))
+			{
+				return "Você não possui o custo necessário para resetar.";
+			}
+		}
+		
+		bonusHolder.setAll(0, 0, 0, 0, 0, 0);
+		BaseAttributeBonusTable.getInstance().saveBonuses(player.getObjectId(), player.isDualClassActive(), bonusHolder);
+		player.getStat().recalculateStats(false);
+		player.sendPacket(new HennaInfo(player));
+		player.broadcastUserInfo();
+		return "Distribuição resetada com sucesso.";
 	}
 	
 	private BaseStat parseStat(String value)
@@ -139,10 +180,32 @@ public class BaseAttributeBoard implements IParseBoardHandler
 		html = html.replace("%int_bonus%", String.valueOf(bonusHolder.getIntBonus()));
 		html = html.replace("%wit_bonus%", String.valueOf(bonusHolder.getWitBonus()));
 		html = html.replace("%men_bonus%", String.valueOf(bonusHolder.getMenBonus()));
+		html = html.replace("%reset_cost%", getResetCostDescription());
 		html = html.replace("%warning%", exceeded ? "<br><center><font color=\"LEVEL\">Você excede os pontos disponíveis para seu level atual.</font></center>" : "");
 		html = html.replace("%message%", message.isEmpty() ? "" : "<br><center><font color=\"FF6A00\">" + message + "</font></center>");
 		
 		CommunityBoardHandler.getInstance().addBypass(player, "Atributos Base", "_bbsattr");
 		CommunityBoardHandler.separateAndSend(html, player);
+	}
+	
+	private String getResetCostDescription()
+	{
+		if (PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_ID <= 0 || PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_COUNT <= 0)
+		{
+			return "Grátis";
+		}
+		
+		return FormatUtil.formatAdena(PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_COUNT) + " " + getResetItemName();
+	}
+	
+	private String getResetItemName()
+	{
+		final ItemTemplate item = ItemData.getInstance().getTemplate(PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_ID);
+		if (item == null)
+		{
+			return "Item " + PlayerConfig.BASE_ATTRIBUTE_RESET_ITEM_ID;
+		}
+		
+		return item.getName();
 	}
 }
