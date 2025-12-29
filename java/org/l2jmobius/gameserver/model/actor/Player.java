@@ -11249,6 +11249,9 @@ public class Player extends Playable
 				}
 			}
 			
+			// Ensure all equipped items are removed before applying the new class.
+			unequipAllForClassChange();
+			
 			// abort any kind of cast.
 			abortCast();
 			
@@ -11391,6 +11394,83 @@ public class Player extends Playable
 			getStat().recalculateStats(false);
 			updateAbnormalVisualEffects();
 			sendSkillList();
+		}
+	}
+
+	private void unequipAllForClassChange()
+	{
+		final PlayerInventory inventory = getInventory();
+		final List<Item> equippedItems = new ArrayList<>(inventory.getPaperdollItems());
+		if (equippedItems.isEmpty())
+		{
+			return;
+		}
+		
+		final Set<Item> modifiedItems = new HashSet<>();
+		
+		// Unequip weapons/offhand first.
+		for (Item item : equippedItems)
+		{
+			if ((item == null) || !item.isEquipped())
+			{
+				continue;
+			}
+			
+			final int slot = item.getLocationSlot();
+			if ((slot == Inventory.PAPERDOLL_RHAND) || (slot == Inventory.PAPERDOLL_LHAND))
+			{
+				unequipItemForClassChange(item, inventory, modifiedItems);
+			}
+		}
+		
+		// Unequip remaining items.
+		for (Item item : equippedItems)
+		{
+			if ((item == null) || !item.isEquipped())
+			{
+				continue;
+			}
+			
+			unequipItemForClassChange(item, inventory, modifiedItems);
+		}
+		
+		if (!modifiedItems.isEmpty())
+		{
+			final InventoryUpdate iu = new InventoryUpdate();
+			for (Item item : modifiedItems)
+			{
+				iu.addModifiedItem(item);
+			}
+			
+			sendInventoryUpdate(iu);
+			broadcastUserInfo();
+		}
+	}
+	
+	private void unequipItemForClassChange(Item item, PlayerInventory inventory, Set<Item> modifiedItems)
+	{
+		try
+		{
+			final BodyPart bodyPart = BodyPart.fromItem(item);
+			final List<Item> unequipped;
+			if ((bodyPart == null) || (bodyPart == BodyPart.NONE))
+			{
+				unequipped = inventory.unEquipItemInSlotAndRecord(item.getLocationSlot());
+			}
+			else if ((bodyPart == BodyPart.DECO) || (bodyPart == BodyPart.BROOCH_JEWEL) || (bodyPart == BodyPart.AGATHION) || (bodyPart == BodyPart.ARTIFACT))
+			{
+				unequipped = inventory.unEquipItemInSlotAndRecord(item.getLocationSlot());
+			}
+			else
+			{
+				unequipped = inventory.unEquipItemInBodySlotAndRecord(bodyPart);
+			}
+			
+			modifiedItems.addAll(unequipped);
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Failed to unequip " + item + " during class change for " + getName() + ": " + e.getMessage(), e);
 		}
 	}
 	
