@@ -52,6 +52,7 @@ import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.enums.creature.Race;
 import org.l2jmobius.gameserver.model.actor.enums.player.PlayerClass;
 import org.l2jmobius.gameserver.model.actor.enums.player.SubclassInfoType;
+import org.l2jmobius.gameserver.model.actor.holders.player.SubClassHolder;
 import org.l2jmobius.gameserver.model.clan.Clan;
 import org.l2jmobius.gameserver.model.events.EventDispatcher;
 import org.l2jmobius.gameserver.model.events.EventType;
@@ -882,6 +883,13 @@ public class ClassMaster extends Script implements IXmlReader
 			return;
 		}
 		
+		final SubClassHolder dualClass = player.getDualClass();
+		if (dualClass == null)
+		{
+			player.sendMessage("You do not have a dual class yet.");
+			return;
+		}
+		
 		if (player.getAdena() < PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS)
 		{
 			player.sendMessage("You need " + FormatUtil.formatAdena(PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS) + " Adena to change your Dual Class.");
@@ -892,8 +900,8 @@ public class ClassMaster extends Script implements IXmlReader
 		LOGGER.info("Player " + player.getName() + " paid " + PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS + " Adena to change dual class.");
 		clearDualClassSkills(player, npc);
 		
-		final int level = player.getLevel();
-		final int classIndex = player.getDualClass().getClassIndex();
+		final long dualClassExp = dualClass.getExp();
+		final int classIndex = dualClass.getClassIndex();
 		if (player.modifySubClass(classIndex, classId, true))
 		{
 			player.abortCast();
@@ -909,9 +917,8 @@ public class ClassMaster extends Script implements IXmlReader
 			takeItems(player, CHAOS_POMANDER_DUAL_CLASS, -1);
 			giveItems(player, CHAOS_POMANDER_DUAL_CLASS, 2);
 			LOGGER.info("Player " + player.getName() + " changed dual class to " + classId + " via ClassMaster.");
+			addExpAndSp(player, dualClassExp - player.getExp(), 0);
 		}
-		
-		addExpAndSp(player, (ExperienceData.getInstance().getExpForLevel(level) + 1) - player.getExp(), 0);
 	}
 	
 	private void clearDualClassSkills(Player player, Npc npc)
