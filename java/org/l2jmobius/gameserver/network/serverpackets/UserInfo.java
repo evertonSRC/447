@@ -37,6 +37,7 @@ import org.l2jmobius.gameserver.model.zone.ZoneId;
 import org.l2jmobius.gameserver.network.GameClient;
 import org.l2jmobius.gameserver.network.ServerPackets;
 import org.l2jmobius.gameserver.network.enums.UserInfoType;
+import org.l2jmobius.gameserver.model.actor.holders.player.BaseAttributeBonusHolder;
 
 /**
  * @author Mobius
@@ -465,12 +466,13 @@ public class UserInfo extends AbstractMaskPacket<UserInfoType>
 		if (containsMask(UserInfoType.STAT_ABILITIES)) // 235
 		{
 			buffer.writeShort(18);
-			buffer.writeShort(0); // STR additional
-			buffer.writeShort(0); // DEX additional
-			buffer.writeShort(0); // CON additional
-			buffer.writeShort(0); // INT additional
-			buffer.writeShort(0); // WIT additional
-			buffer.writeShort(0); // MEN additional
+			final BaseAttributeBonusHolder baseAttributeBonus = _player.getActiveBaseAttributeBonusHolder();
+			buffer.writeShort(baseAttributeBonus.getStrBonus()); // STR additional
+			buffer.writeShort(baseAttributeBonus.getDexBonus()); // DEX additional
+			buffer.writeShort(baseAttributeBonus.getConBonus()); // CON additional
+			buffer.writeShort(baseAttributeBonus.getIntBonus()); // INT additional
+			buffer.writeShort(baseAttributeBonus.getWitBonus()); // WIT additional
+			buffer.writeShort(baseAttributeBonus.getMenBonus()); // MEN additional
 			buffer.writeShort(0); // ?
 			buffer.writeShort(0); // ?
 		}
