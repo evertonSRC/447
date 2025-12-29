@@ -152,6 +152,7 @@ import org.l2jmobius.gameserver.managers.CustomMailManager;
 import org.l2jmobius.gameserver.managers.DailyResetManager;
 import org.l2jmobius.gameserver.managers.DatabaseSpawnManager;
 import org.l2jmobius.gameserver.managers.FakePlayerChatManager;
+import org.l2jmobius.gameserver.managers.FourthClassSkillTreeManager;
 import org.l2jmobius.gameserver.managers.FortManager;
 import org.l2jmobius.gameserver.managers.FortSiegeManager;
 import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
@@ -273,6 +274,7 @@ public class GameServer
 		TransformData.getInstance();
 		SkillData.getInstance();
 		SkillTreeData.getInstance();
+		FourthClassSkillTreeManager.getInstance();
 		PetSkillData.getInstance();
 		
 		printSection("Items");
