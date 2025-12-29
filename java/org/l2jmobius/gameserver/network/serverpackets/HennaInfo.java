@@ -55,14 +55,14 @@ public class HennaInfo extends ServerPacket
 	public void writeImpl(GameClient client, WritableBuffer buffer)
 	{
 		ServerPackets.HENNA_INFO.writeId(this, buffer);
-		buffer.writeShort(_player.getHennaValue(BaseStat.INT)); // equip INT
-		buffer.writeShort(_player.getHennaValue(BaseStat.STR)); // equip STR
-		buffer.writeShort(_player.getHennaValue(BaseStat.CON)); // equip CON
-		buffer.writeShort(_player.getHennaValue(BaseStat.MEN)); // equip MEN
-		buffer.writeShort(_player.getHennaValue(BaseStat.DEX)); // equip DEX
-		buffer.writeShort(_player.getHennaValue(BaseStat.WIT)); // equip WIT
-		buffer.writeShort(_player.getHennaValue(BaseStat.LUC)); // equip LUC
-		buffer.writeShort(_player.getHennaValue(BaseStat.CHA)); // equip CHA
+		buffer.writeShort(_player.getHennaValue(BaseStat.INT) + _player.getBaseAttributeBonus(BaseStat.INT)); // equip INT
+		buffer.writeShort(_player.getHennaValue(BaseStat.STR) + _player.getBaseAttributeBonus(BaseStat.STR)); // equip STR
+		buffer.writeShort(_player.getHennaValue(BaseStat.CON) + _player.getBaseAttributeBonus(BaseStat.CON)); // equip CON
+		buffer.writeShort(_player.getHennaValue(BaseStat.MEN) + _player.getBaseAttributeBonus(BaseStat.MEN)); // equip MEN
+		buffer.writeShort(_player.getHennaValue(BaseStat.DEX) + _player.getBaseAttributeBonus(BaseStat.DEX)); // equip DEX
+		buffer.writeShort(_player.getHennaValue(BaseStat.WIT) + _player.getBaseAttributeBonus(BaseStat.WIT)); // equip WIT
+		buffer.writeShort(_player.getHennaValue(BaseStat.LUC) + _player.getBaseAttributeBonus(BaseStat.LUC)); // equip LUC
+		buffer.writeShort(_player.getHennaValue(BaseStat.CHA) + _player.getBaseAttributeBonus(BaseStat.CHA)); // equip CHA
 		buffer.writeInt(3 - _player.getHennaEmptySlots()); // Slots
 		buffer.writeInt(_hennas.size()); // Size
 		for (Henna henna : _hennas)
