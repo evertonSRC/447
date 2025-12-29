@@ -186,6 +186,7 @@ import handlers.chathandlers.ChatShout;
 import handlers.chathandlers.ChatTrade;
 import handlers.chathandlers.ChatWhisper;
 import handlers.chathandlers.ChatWorld;
+import handlers.communityboard.BaseAttributeBoard;
 import handlers.communityboard.ClanBoard;
 import handlers.communityboard.DropSearchBoard;
 import handlers.communityboard.FavoriteBoard;
@@ -517,6 +518,7 @@ public class MasterHandler
 		},
 		{
 			// Community Board
+			BaseAttributeBoard.class,
 			ClanBoard.class,
 			FavoriteBoard.class,
 			FriendsBoard.class,
