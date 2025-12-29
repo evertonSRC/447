@@ -615,27 +615,7 @@ public class ClassMaster extends Script implements IXmlReader
 			}
 			default:
 			{
-				if (event.startsWith("dualclass_choose_"))
-				{
-					if (!canUseDualClassFeatures(player, true) || player.hasDualClass())
-					{
-						return null;
-					}
-					
-					showDualClassClassList(player, npc, event.replace("dualclass_choose_", ""), "Select your Dual Class.", "dualclass_pick");
-					return null;
-				}
-				else if (event.startsWith("dualclass_change_"))
-				{
-					if (!canUseDualClassFeatures(player, false) || !player.hasDualClass())
-					{
-						return null;
-					}
-					
-					showDualClassClassList(player, npc, event.replace("dualclass_change_", ""), "Select the new Dual Class.", "dualclass_change_pick");
-					return null;
-				}
-				else if (event.startsWith("dualclass_pick"))
+				if (event.startsWith("dualclass_pick"))
 				{
 					if (!canUseDualClassFeatures(player, true) || player.hasDualClass())
 					{
@@ -663,6 +643,26 @@ public class ClassMaster extends Script implements IXmlReader
 					
 					final int classId = Integer.parseInt(st.nextToken());
 					handleDualClassChange(player, npc, classId);
+					return null;
+				}
+				else if (event.startsWith("dualclass_choose_"))
+				{
+					if (!canUseDualClassFeatures(player, true) || player.hasDualClass())
+					{
+						return null;
+					}
+					
+					showDualClassClassList(player, npc, event.replace("dualclass_choose_", ""), "Select your Dual Class.", "dualclass_pick");
+					return null;
+				}
+				else if (event.startsWith("dualclass_change_"))
+				{
+					if (!canUseDualClassFeatures(player, false) || !player.hasDualClass())
+					{
+						return null;
+					}
+					
+					showDualClassClassList(player, npc, event.replace("dualclass_change_", ""), "Select the new Dual Class.", "dualclass_change_pick");
 					return null;
 				}
 				break;
@@ -784,15 +784,22 @@ public class ClassMaster extends Script implements IXmlReader
 		{
 			return;
 		}
+
+		final String html = htmltext.replace("%title%", title).replace("%actionPrefix%", actionPrefix);
+		if (npc == null)
+		{
+			showResult(player, html);
+			return;
+		}
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-		html.setHtml(htmltext.replace("%title%", title).replace("%actionPrefix%", actionPrefix));
-		player.sendPacket(html);
+		final NpcHtmlMessage htmlMessage = new NpcHtmlMessage(npc.getObjectId());
+		htmlMessage.setHtml(html);
+		player.sendPacket(htmlMessage);
 	}
 	
 	private void showDualClassClassList(Player player, Npc npc, String categoryName, String title, String action)
 	{
-		final CategoryType cType = CategoryType.valueOf(categoryName);
+		final CategoryType cType = CategoryType.findByName(categoryName);
 		if (cType == null)
 		{
 			player.sendMessage("Invalid dual class category.");
@@ -814,9 +821,16 @@ public class ClassMaster extends Script implements IXmlReader
 			}
 		}
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-		html.setHtml(htmltext.replace("%title%", title).replace("%dualclassList%", sb.toString()));
-		player.sendPacket(html);
+		final String html = htmltext.replace("%title%", title).replace("%dualclassList%", sb.toString());
+		if (npc == null)
+		{
+			showResult(player, html);
+			return;
+		}
+		
+		final NpcHtmlMessage htmlMessage = new NpcHtmlMessage(npc.getObjectId());
+		htmlMessage.setHtml(html);
+		player.sendPacket(htmlMessage);
 	}
 	
 	private List<PlayerClass> getDualClasses(Player player, CategoryType cType)
