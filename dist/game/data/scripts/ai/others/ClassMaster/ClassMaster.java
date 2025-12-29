@@ -699,7 +699,7 @@ public class ClassMaster extends Script implements IXmlReader
 			return false;
 		}
 		
-		if (player.isInCombat() || player.isInDuel() || player.isInOlympiadMode() || player.isInObserverMode())
+		if (player.isInCombat() || player.isInDuel() || player.isInOlympiadMode() || player.inObserverMode())
 		{
 			player.sendMessage("You cannot change classes while in combat or special modes.");
 			return false;
