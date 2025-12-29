@@ -45,13 +45,12 @@ import org.l2jmobius.gameserver.model.events.annotations.RegisterEvent;
 import org.l2jmobius.gameserver.model.events.annotations.RegisterType;
 import org.l2jmobius.gameserver.model.events.holders.actor.npc.OnNpcMenuSelect;
 import org.l2jmobius.gameserver.model.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.model.script.QuestState;
 import org.l2jmobius.gameserver.model.script.Script;
 import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
 import org.l2jmobius.gameserver.network.serverpackets.ExSubjobInfo;
 import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.util.FormatUtil;
 
-import quests.Q10107_SplitDestiny.Q10107_SplitDestiny;
 
 /**
  * @author Mobius
@@ -90,7 +89,7 @@ public class Joachim extends Script
 		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.WYNN_ARCANA_LORD, PlayerClass.WYNN_ELEMENTAL_MASTER, PlayerClass.WYNN_SPECTRAL_MASTER));
 		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.AEORE_CARDINAL, PlayerClass.AEORE_EVA_SAINT, PlayerClass.AEORE_SHILLIEN_SAINT));
 	}
-	private static final int REAWAKEN_PRICE = 300000000;
+	private static final int DUAL_CLASS_MIN_LEVEL = 1;
 	
 	private Joachim()
 	{
@@ -107,16 +106,7 @@ public class Joachim extends Script
 		{
 			case "addDualClass":
 			{
-				if (PlayerConfig.DISABLE_TUTORIAL)
-				{
-					final QuestState qs = player.getQuestState(Q10107_SplitDestiny.class.getSimpleName());
-					if ((qs == null) || (!qs.isCompleted() && !PlayerConfig.ALT_GAME_DUALCLASS_WITHOUT_QUEST))
-					{
-						htmltext = "noQuest.html";
-					}
-				}
-				
-				if (player.getLevel() < 105)
+				if (player.getLevel() < DUAL_CLASS_MIN_LEVEL)
 				{
 					htmltext = "noLevel.html";
 				}
@@ -169,9 +159,15 @@ public class Joachim extends Script
 				{
 					htmltext = "noDualClass.html";
 				}
-				else if ((player.getAdena() < REAWAKEN_PRICE))
+				else if ((player.getAdena() < PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS))
 				{
-					htmltext = "noAdena.html";
+					final NpcHtmlMessage html = getNpcHtmlMessage(player, npc, "noAdena.html");
+					if (html != null)
+					{
+						html.replace("%fee%", FormatUtil.formatAdena(PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS));
+						player.sendPacket(html);
+					}
+					htmltext = null;
 				}
 				else if (player.hasSummon() || player.isTransformed())
 				{
@@ -271,7 +267,7 @@ public class Joachim extends Script
 			case 1: // Create DualClass
 			{
 				final int classId = event.getReply();
-				if (player.isTransformed() || player.hasSummon() || player.hasDualClass() || !player.isAwakenedClass())
+				if (player.isTransformed() || player.hasSummon() || player.hasDualClass())
 				{
 					break;
 				}
@@ -314,7 +310,7 @@ public class Joachim extends Script
 			case 2: // Reawaken (change dual class)
 			{
 				final int classId = event.getReply();
-				if (player.isTransformed() || player.hasSummon() || (!player.hasDualClass() || !player.isDualClassActive() || !player.isAwakenedClass()))
+				if (player.isTransformed() || player.hasSummon() || (!player.hasDualClass() || !player.isDualClassActive()))
 				{
 					break;
 				}
@@ -325,14 +321,18 @@ public class Joachim extends Script
 					break;
 				}
 				
-				if ((player.getAdena() < REAWAKEN_PRICE))
+				if ((player.getAdena() < PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS))
 				{
 					final NpcHtmlMessage html = getNpcHtmlMessage(player, npc, "noAdena.html");
-					player.sendPacket(html);
+					if (html != null)
+					{
+						html.replace("%fee%", FormatUtil.formatAdena(PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS));
+						player.sendPacket(html);
+					}
 					break;
 				}
 				
-				player.reduceAdena(ItemProcessType.FEE, REAWAKEN_PRICE, npc, true);
+				player.reduceAdena(ItemProcessType.FEE, PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS, npc, true);
 				final int level = player.getLevel();
 				
 				final int classIndex = player.getClassIndex();
