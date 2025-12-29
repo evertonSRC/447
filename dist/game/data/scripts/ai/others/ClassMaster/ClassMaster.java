@@ -890,17 +890,22 @@ public class ClassMaster extends Script implements IXmlReader
 	
 	private void handleDualClassChange(Player player, Npc npc, int classId)
 	{
-		if (!getDualClasses(player, null).contains(PlayerClass.getPlayerClass(classId)))
-		{
-			player.sendMessage("Invalid dual class selection.");
-			LOGGER.warning("Dual class change denied for " + player.getName() + ": invalid class " + classId + ".");
-			return;
-		}
-		
 		final SubClassHolder dualClass = player.getDualClass();
 		if (dualClass == null)
 		{
 			player.sendMessage("You do not have a dual class yet.");
+			return;
+		}
+		
+		if (dualClass.getId() == classId)
+		{
+			return;
+		}
+		
+		if (!getDualClasses(player, null).contains(PlayerClass.getPlayerClass(classId)))
+		{
+			player.sendMessage("Invalid dual class selection.");
+			LOGGER.warning("Dual class change denied for " + player.getName() + ": invalid class " + classId + ".");
 			return;
 		}
 		
