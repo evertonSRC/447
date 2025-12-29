@@ -24,8 +24,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
@@ -34,10 +37,12 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import org.l2jmobius.commons.util.IXmlReader;
+import org.l2jmobius.commons.threads.ThreadPool;
 import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.data.enums.CategoryType;
 import org.l2jmobius.gameserver.data.xml.CategoryData;
 import org.l2jmobius.gameserver.data.xml.ClassListData;
+import org.l2jmobius.gameserver.data.xml.ExperienceData;
 import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.data.xml.SkillData;
 import org.l2jmobius.gameserver.data.xml.SkillTreeData;
@@ -46,6 +51,7 @@ import org.l2jmobius.gameserver.model.actor.Npc;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.enums.creature.Race;
 import org.l2jmobius.gameserver.model.actor.enums.player.PlayerClass;
+import org.l2jmobius.gameserver.model.actor.enums.player.SubclassInfoType;
 import org.l2jmobius.gameserver.model.clan.Clan;
 import org.l2jmobius.gameserver.model.events.EventDispatcher;
 import org.l2jmobius.gameserver.model.events.EventType;
@@ -61,10 +67,17 @@ import org.l2jmobius.gameserver.model.events.holders.actor.player.OnPlayerProfes
 import org.l2jmobius.gameserver.model.item.enums.ItemProcessType;
 import org.l2jmobius.gameserver.model.item.holders.ItemHolder;
 import org.l2jmobius.gameserver.model.script.Script;
+import org.l2jmobius.gameserver.model.skill.Skill;
+import org.l2jmobius.gameserver.model.variables.PlayerVariables;
 import org.l2jmobius.gameserver.model.spawns.SpawnTemplate;
+import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
+import org.l2jmobius.gameserver.network.serverpackets.ExSubjobInfo;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
 import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
 import org.l2jmobius.gameserver.network.serverpackets.TutorialCloseHtml;
 import org.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.util.FormatUtil;
 
 /**
  * Class Master AI.
@@ -87,6 +100,42 @@ public class ClassMaster extends Script implements IXmlReader
 	private boolean _spawnClassMasters;
 	private boolean _showPopupWindow;
 	private final List<ClassChangeData> _classChangeData = new LinkedList<>();
+	private static final int DUAL_CLASS_MIN_LEVEL = 1;
+	private static final int DUAL_CLASS_CREATE_ASK = 1001;
+	private static final int DUAL_CLASS_CHANGE_ASK = 1002;
+	private static final String DUAL_CERTIFICATE_COUNT_VAR = "DUAL_CERTIFICATE_COUNT";
+	private static final int[] DUAL_SKILL_LEVELS = {85, 90, 95, 99, 101, 103, 105, 107, 109, 110};
+	
+	// Dual class rewards/items
+	private static final int CHAOS_POMANDER_DUAL_CLASS = 37375;
+	private static final int PAULINAS_RGRADE_EQUIPMENT_SET = 46919;
+	private static final int DUAL_CERTIFICATE = 36078;
+	private static final int DUAL_CERTIFICATE_ENHANCED = 81731;
+	private static final Map<CategoryType, Integer> POWER_ITEMS = new EnumMap<>(CategoryType.class);
+	static
+	{
+		POWER_ITEMS.put(CategoryType.SIXTH_SIGEL_GROUP, 32264); // Abelius Power
+		POWER_ITEMS.put(CategoryType.SIXTH_TIR_GROUP, 32265); // Sapyros Power
+		POWER_ITEMS.put(CategoryType.SIXTH_OTHEL_GROUP, 32266); // Ashagen Power
+		POWER_ITEMS.put(CategoryType.SIXTH_YR_GROUP, 32267); // Cranigg Power
+		POWER_ITEMS.put(CategoryType.SIXTH_FEOH_GROUP, 32268); // Soltkreig Power
+		POWER_ITEMS.put(CategoryType.SIXTH_WYNN_GROUP, 32269); // Naviarope Power
+		POWER_ITEMS.put(CategoryType.SIXTH_IS_GROUP, 32270); // Leister Power
+		POWER_ITEMS.put(CategoryType.SIXTH_EOLH_GROUP, 32271); // Laksis Power
+	}
+	
+	private static final List<PlayerClass> DUAL_CLASS_LIST = new ArrayList<>();
+	static
+	{
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.SIGEL_PHOENIX_KNIGHT, PlayerClass.SIGEL_HELL_KNIGHT, PlayerClass.SIGEL_EVA_TEMPLAR, PlayerClass.SIGEL_SHILLIEN_TEMPLAR));
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.TYRR_DUELIST, PlayerClass.TYRR_DREADNOUGHT, PlayerClass.TYRR_TITAN, PlayerClass.TYRR_GRAND_KHAVATARI, PlayerClass.TYRR_DOOMBRINGER));
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.OTHELL_ADVENTURER, PlayerClass.OTHELL_WIND_RIDER, PlayerClass.OTHELL_GHOST_HUNTER, PlayerClass.OTHELL_FORTUNE_SEEKER));
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.YUL_SAGITTARIUS, PlayerClass.YUL_MOONLIGHT_SENTINEL, PlayerClass.YUL_GHOST_SENTINEL, PlayerClass.YUL_TRICKSTER));
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.FEOH_ARCHMAGE, PlayerClass.FEOH_SOULTAKER, PlayerClass.FEOH_MYSTIC_MUSE, PlayerClass.FEOH_STORM_SCREAMER, PlayerClass.FEOH_SOUL_HOUND));
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.ISS_HIEROPHANT, PlayerClass.ISS_SWORD_MUSE, PlayerClass.ISS_SPECTRAL_DANCER, PlayerClass.ISS_DOOMCRYER));
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.WYNN_ARCANA_LORD, PlayerClass.WYNN_ELEMENTAL_MASTER, PlayerClass.WYNN_SPECTRAL_MASTER));
+		DUAL_CLASS_LIST.addAll(Arrays.asList(PlayerClass.AEORE_CARDINAL, PlayerClass.AEORE_EVA_SAINT, PlayerClass.AEORE_SHILLIEN_SAINT));
+	}
 	
 	public ClassMaster()
 	{
@@ -261,6 +310,36 @@ public class ClassMaster extends Script implements IXmlReader
 			{
 				htmltext = npc.getId() == CLASS_MASTERS.get(0) ? "test_server_helper001a.html" : "test_server_helper001b.html";
 				break;
+			}
+			case "dualclass_choose":
+			{
+				if (!canUseDualClassFeatures(player, true))
+				{
+					return null;
+				}
+				if (player.hasDualClass())
+				{
+					player.sendMessage("You already have a dual class.");
+					return null;
+				}
+				
+				showDualClassGroupList(player, npc, "Which class would you like as your Dual Class?", "dualclass_choose_");
+				return null;
+			}
+			case "dualclass_change":
+			{
+				if (!canUseDualClassFeatures(player, false))
+				{
+					return null;
+				}
+				if (!player.hasDualClass())
+				{
+					player.sendMessage("You do not have a dual class yet.");
+					return null;
+				}
+				
+				showDualClassGroupList(player, npc, "Choose a new Dual Class. Fee: " + FormatUtil.formatAdena(PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS) + " Adena.", "dualclass_change_");
+				return null;
 			}
 			case "setnoble":
 			{
@@ -514,9 +593,302 @@ public class ClassMaster extends Script implements IXmlReader
 				}
 				break;
 			}
+			default:
+			{
+				if (event.startsWith("dualclass_choose_"))
+				{
+					if (!canUseDualClassFeatures(player, true) || player.hasDualClass())
+					{
+						return null;
+					}
+					
+					showDualClassClassList(player, npc, event.replace("dualclass_choose_", ""), "Select your Dual Class.", "dualclass_pick");
+					return null;
+				}
+				else if (event.startsWith("dualclass_change_"))
+				{
+					if (!canUseDualClassFeatures(player, false) || !player.hasDualClass())
+					{
+						return null;
+					}
+					
+					showDualClassClassList(player, npc, event.replace("dualclass_change_", ""), "Select the new Dual Class.", "dualclass_change_pick");
+					return null;
+				}
+				else if (event.startsWith("dualclass_pick"))
+				{
+					if (!canUseDualClassFeatures(player, true) || player.hasDualClass())
+					{
+						return null;
+					}
+					if (!st.hasMoreTokens())
+					{
+						return null;
+					}
+					
+					final int classId = Integer.parseInt(st.nextToken());
+					handleDualClassCreate(player, npc, classId);
+					return null;
+				}
+				else if (event.startsWith("dualclass_change_pick"))
+				{
+					if (!canUseDualClassFeatures(player, false) || !player.hasDualClass())
+					{
+						return null;
+					}
+					if (!st.hasMoreTokens())
+					{
+						return null;
+					}
+					
+					final int classId = Integer.parseInt(st.nextToken());
+					handleDualClassChange(player, npc, classId);
+					return null;
+				}
+				break;
+			}
 		}
 		
 		return htmltext;
+	}
+	
+	private boolean canUseDualClassFeatures(Player player, boolean creating)
+	{
+		if (player.isChangingClass())
+		{
+			player.sendMessage("You are already changing class.");
+			return false;
+		}
+		
+		if (player.getLevel() < DUAL_CLASS_MIN_LEVEL)
+		{
+			player.sendMessage("You must be level " + DUAL_CLASS_MIN_LEVEL + " or higher to use Dual Class.");
+			return false;
+		}
+		
+		if (player.isAlikeDead() || player.isDead())
+		{
+			player.sendMessage("You cannot use this while dead.");
+			return false;
+		}
+		
+		if (player.isInCombat() || player.isInDuel() || player.isInOlympiadMode() || player.isInObserverMode())
+		{
+			player.sendMessage("You cannot change classes while in combat or special modes.");
+			return false;
+		}
+		
+		if (player.isOnEvent())
+		{
+			player.sendMessage("You cannot change classes while participating in an event.");
+			return false;
+		}
+		
+		if (player.isTransformed() || player.isMounted())
+		{
+			player.sendMessage("You cannot change classes while transformed or mounted.");
+			return false;
+		}
+		
+		if (player.hasSummon())
+		{
+			player.sendPacket(SystemMessageId.YOU_CANNOT_CREATE_OR_CHANGE_A_DUAL_CLASS_WHILE_A_SERVITOR_OR_A_PET_IS_SUMMONED);
+			return false;
+		}
+		
+		if (player.isInStoreMode() || player.isCrafting() || (player.getActiveTradeList() != null) || player.isProcessingRequest())
+		{
+			player.sendMessage("You cannot change classes while trading or operating a private store.");
+			return false;
+		}
+		
+		if (player.isInInstance())
+		{
+			player.sendMessage("You cannot change classes inside an instance.");
+			return false;
+		}
+		
+		if (!player.isInventoryUnder80(true) || (player.getWeightPenalty() >= 2))
+		{
+			player.sendPacket(SystemMessageId.YOU_CANNOT_CREATE_OR_CHANGE_A_DUAL_CLASS_WHILE_YOU_HAVE_OVERWEIGHT);
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private void showDualClassGroupList(Player player, Npc npc, String title, String actionPrefix)
+	{
+		final String htmltext = getHtm(player, "dualclass_select_group.html");
+		if (htmltext == null)
+		{
+			return;
+		}
+		
+		final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+		html.setHtml(htmltext.replace("%title%", title).replace("%actionPrefix%", actionPrefix));
+		player.sendPacket(html);
+	}
+	
+	private void showDualClassClassList(Player player, Npc npc, String categoryName, String title, String action)
+	{
+		final CategoryType cType = CategoryType.valueOf(categoryName);
+		if (cType == null)
+		{
+			player.sendMessage("Invalid dual class category.");
+			return;
+		}
+		
+		final String htmltext = getHtm(player, "dualclass_select_class.html");
+		if (htmltext == null)
+		{
+			return;
+		}
+		
+		final StringBuilder sb = new StringBuilder();
+		for (PlayerClass dualClass : getDualClasses(player, cType))
+		{
+			if (dualClass != null)
+			{
+				sb.append("<button value=\"" + ClassListData.getInstance().getClass(dualClass.getId()).getClassName() + "\" action=\"bypass -h Quest ClassMaster " + action + " " + dualClass.getId() + "\" width=\"200\" height=\"31\" back=\"L2UI_CT1.HtmlWnd_DF_Awake_Down\" fore=\"L2UI_CT1.HtmlWnd_DF_Awake\"><br>");
+			}
+		}
+		
+		final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+		html.setHtml(htmltext.replace("%title%", title).replace("%dualclassList%", sb.toString()));
+		player.sendPacket(html);
+	}
+	
+	private List<PlayerClass> getDualClasses(Player player, CategoryType cType)
+	{
+		final List<PlayerClass> tempList = new ArrayList<>();
+		final int baseClassId = player.getBaseClass();
+		final int activeClassId = player.getPlayerClass().getId();
+		final int dualClassId = player.getDualClass() != null ? player.getDualClass().getId() : -1;
+		for (PlayerClass temp : DUAL_CLASS_LIST)
+		{
+			if ((temp.getId() != baseClassId) && (temp.getId() != activeClassId) && (temp.getId() != dualClassId) && ((cType == null) || CategoryData.getInstance().isInCategory(cType, temp.getId())))
+			{
+				tempList.add(temp);
+			}
+		}
+		
+		return tempList;
+	}
+	
+	private void handleDualClassCreate(Player player, Npc npc, int classId)
+	{
+		if (!getDualClasses(player, null).contains(PlayerClass.getPlayerClass(classId)))
+		{
+			player.sendMessage("Invalid dual class selection.");
+			return;
+		}
+		
+		if (player.addSubClass(classId, 1, true))
+		{
+			player.abortCast();
+			player.stopAllEffectsExceptThoseThatLastThroughDeath();
+			player.stopAllEffects();
+			player.stopCubics();
+			player.setActiveClass(1);
+			player.sendPacket(new ExSubjobInfo(player, SubclassInfoType.CLASS_CHANGED));
+			SkillTreeData.getInstance().cleanSkillUponChangeClass(player);
+			player.restoreDualSkills();
+			player.sendPacket(new AcquireSkillList(player));
+			player.sendSkillList();
+			player.broadcastUserInfo();
+			
+			// Fix Death Knight model animation.
+			if (player.isDeathKnight())
+			{
+				player.transform(101, false);
+				ThreadPool.schedule(() -> player.stopTransformation(false), 50);
+			}
+			
+			// Item rewards
+			player.addItem(ItemProcessType.REWARD, CHAOS_POMANDER_DUAL_CLASS, 2, player, true);
+			player.addItem(ItemProcessType.REWARD, PAULINAS_RGRADE_EQUIPMENT_SET, 1, player, true);
+			giveItems(player, getPowerItemId(player), 1);
+		}
+	}
+	
+	private void handleDualClassChange(Player player, Npc npc, int classId)
+	{
+		if (!getDualClasses(player, null).contains(PlayerClass.getPlayerClass(classId)))
+		{
+			player.sendMessage("Invalid dual class selection.");
+			return;
+		}
+		
+		if (player.getAdena() < PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS)
+		{
+			player.sendMessage("You need " + FormatUtil.formatAdena(PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS) + " Adena to change your Dual Class.");
+			return;
+		}
+		
+		player.reduceAdena(ItemProcessType.FEE, PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS, npc, true);
+		clearDualClassSkills(player, npc);
+		
+		final int level = player.getLevel();
+		final int classIndex = player.getDualClass().getClassIndex();
+		if (player.modifySubClass(classIndex, classId, true))
+		{
+			player.abortCast();
+			player.stopAllEffectsExceptThoseThatLastThroughDeath();
+			player.stopAllEffects();
+			player.stopCubics();
+			player.setActiveClass(classIndex);
+			player.sendPacket(new ExSubjobInfo(player, SubclassInfoType.CLASS_CHANGED));
+			SkillTreeData.getInstance().cleanSkillUponChangeClass(player);
+			player.restoreDualSkills();
+			player.sendPacket(new AcquireSkillList(player));
+			player.sendSkillList();
+			takeItems(player, CHAOS_POMANDER_DUAL_CLASS, -1);
+			giveItems(player, CHAOS_POMANDER_DUAL_CLASS, 2);
+		}
+		
+		addExpAndSp(player, (ExperienceData.getInstance().getExpForLevel(level) + 1) - player.getExp(), 0);
+	}
+	
+	private void clearDualClassSkills(Player player, Npc npc)
+	{
+		takeItems(player, DUAL_CERTIFICATE, -1);
+		takeItems(player, DUAL_CERTIFICATE_ENHANCED, -1);
+		player.getWarehouse().destroyItemByItemId(ItemProcessType.QUEST, DUAL_CERTIFICATE, -1, player, npc);
+		player.getWarehouse().destroyItemByItemId(ItemProcessType.QUEST, DUAL_CERTIFICATE_ENHANCED, -1, player, npc);
+		player.getVariables().remove(DUAL_CERTIFICATE_COUNT_VAR);
+		
+		final PlayerVariables vars = player.getVariables();
+		for (int lv : DUAL_SKILL_LEVELS)
+		{
+			vars.remove("DualSkill-" + lv);
+		}
+		
+		takeSkills(player, "DualSkillList");
+	}
+	
+	private void takeSkills(Player player, String type)
+	{
+		final PlayerVariables vars = player.getVariables();
+		final String list = vars.getString(type, "");
+		if (!list.isEmpty())
+		{
+			final String[] skills = list.split(";");
+			for (String skill : skills)
+			{
+				final String[] str = skill.split("-");
+				final Skill sk = SkillData.getInstance().getSkill(Integer.parseInt(str[0]), Integer.parseInt(str[1]));
+				player.removeSkill(sk);
+			}
+			
+			vars.remove(type);
+			player.sendSkillList();
+		}
+	}
+	
+	private int getPowerItemId(Player player)
+	{
+		return POWER_ITEMS.entrySet().stream().filter(e -> player.isInCategory(e.getKey())).mapToInt(Entry::getValue).findFirst().orElse(0);
 	}
 
 	private String getDirectThirdOccupationChangeHtml(Player player)
