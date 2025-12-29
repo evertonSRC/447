@@ -88,6 +88,7 @@ import org.l2jmobius.gameserver.data.holders.RelicDataHolder;
 import org.l2jmobius.gameserver.data.holders.SellBuffHolder;
 import org.l2jmobius.gameserver.data.holders.TimedHuntingZoneHolder;
 import org.l2jmobius.gameserver.data.holders.TrainingHolder;
+import org.l2jmobius.gameserver.data.sql.BaseAttributeBonusTable;
 import org.l2jmobius.gameserver.data.sql.CharInfoTable;
 import org.l2jmobius.gameserver.data.sql.CharSummonTable;
 import org.l2jmobius.gameserver.data.sql.ClanTable;
@@ -197,6 +198,7 @@ import org.l2jmobius.gameserver.model.actor.instance.Doppelganger;
 import org.l2jmobius.gameserver.model.actor.instance.FriendlyMob;
 import org.l2jmobius.gameserver.model.actor.instance.Guard;
 import org.l2jmobius.gameserver.model.actor.instance.Pet;
+import org.l2jmobius.gameserver.model.actor.holders.player.BaseAttributeBonusHolder;
 import org.l2jmobius.gameserver.model.actor.instance.Shuttle;
 import org.l2jmobius.gameserver.model.actor.instance.TamedBeast;
 import org.l2jmobius.gameserver.model.actor.instance.Trap;
@@ -734,6 +736,9 @@ public class Player extends Playable
 	private final Henna[] _henna = new Henna[4];
 	private final Map<BaseStat, Integer> _hennaBaseStats = new ConcurrentHashMap<>();
 	private final Map<Integer, ScheduledFuture<?>> _hennaRemoveSchedules = new ConcurrentHashMap<>(4);
+
+	private final BaseAttributeBonusHolder _baseAttributeBonusMain = new BaseAttributeBonusHolder();
+	private final BaseAttributeBonusHolder _baseAttributeBonusDual = new BaseAttributeBonusHolder();
 	
 	private static final String SYMBOL_POINTS_VAR = "SYMBOL_POINTS";
 	
@@ -7913,6 +7918,9 @@ public class Player extends Playable
 		
 		// Retrieve from the database all henna of this Player and add them to _henna.
 		restoreHenna();
+
+		// Retrieve base attribute bonuses.
+		restoreBaseAttributeBonuses();
 		
 		// Retrieve from the database all teleport bookmark of this Player and add them to _tpbookmark.
 		restoreTeleportBookmark();
@@ -7947,6 +7955,13 @@ public class Player extends Playable
 		
 		// Restore items in pet inventory.
 		restorePetInventoryItems();
+	}
+
+	private void restoreBaseAttributeBonuses()
+	{
+		final BaseAttributeBonusHolder[] bonuses = BaseAttributeBonusTable.getInstance().loadBonuses(getObjectId());
+		_baseAttributeBonusMain.copyFrom(bonuses[0]);
+		_baseAttributeBonusDual.copyFrom(bonuses[1]);
 	}
 	
 	/**
@@ -15521,6 +15536,39 @@ public class Player extends Playable
 	{
 		// Grand Crusade: 1 point per level after 84
 		return Math.max(0, getLevel() - 84);
+	}
+
+	/**
+	 * @return the amount of base attribute points available to this class.
+	 */
+	public int getAvailableBaseAttributePoints()
+	{
+		return Math.max(0, getLevel() - 59);
+	}
+
+	public BaseAttributeBonusHolder getActiveBaseAttributeBonusHolder()
+	{
+		return isDualClassActive() ? _baseAttributeBonusDual : _baseAttributeBonusMain;
+	}
+
+	public BaseAttributeBonusHolder getBaseAttributeBonusHolder(boolean dual)
+	{
+		return dual ? _baseAttributeBonusDual : _baseAttributeBonusMain;
+	}
+
+	public int getBaseAttributeBonus(BaseStat stat)
+	{
+		return getActiveBaseAttributeBonusHolder().getBonus(stat);
+	}
+
+	public int getBaseAttributePointsUsed()
+	{
+		return getActiveBaseAttributeBonusHolder().getTotalUsed();
+	}
+
+	public int getRemainingBaseAttributePoints()
+	{
+		return Math.max(0, getAvailableBaseAttributePoints() - getBaseAttributePointsUsed());
 	}
 	
 	/**
