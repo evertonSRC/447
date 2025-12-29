@@ -70,6 +70,7 @@ import org.l2jmobius.gameserver.model.script.Script;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.variables.PlayerVariables;
 import org.l2jmobius.gameserver.model.spawns.SpawnTemplate;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
 import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
 import org.l2jmobius.gameserver.network.serverpackets.ExSubjobInfo;
 import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
@@ -289,7 +290,21 @@ public class ClassMaster extends Script implements IXmlReader
 	@Override
 	public String onFirstTalk(Npc npc, Player player)
 	{
-		return "test_server_helper001.html";
+		if (!_isEnabled)
+		{
+			return null;
+		}
+		
+		final String htmltext = getHtm(player, "test_server_helper001.html");
+		if (htmltext == null)
+		{
+			return null;
+		}
+		
+		final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+		html.setHtml(htmltext.replace("%dualclassButtons%", buildDualClassButtons(player)));
+		player.sendPacket(html);
+		return null;
 	}
 	
 	@Override
@@ -589,7 +604,11 @@ public class ClassMaster extends Script implements IXmlReader
 			{
 				if (CLASS_MASTERS.contains(npc.getId()))
 				{
-					htmltext = event;
+					final String mainHtml = getHtm(player, event);
+					if (mainHtml != null)
+					{
+						htmltext = mainHtml.replace("%dualclassButtons%", buildDualClassButtons(player));
+					}
 				}
 				break;
 			}
@@ -660,9 +679,17 @@ public class ClassMaster extends Script implements IXmlReader
 			return false;
 		}
 		
+		if (!isMainClassAwakened(player))
+		{
+			player.sendMessage("You can only manage a Dual Class after your main class is awakened.");
+			LOGGER.info("Dual class access denied for " + player.getName() + ": main class not awakened.");
+			return false;
+		}
+		
 		if (player.getLevel() < DUAL_CLASS_MIN_LEVEL)
 		{
 			player.sendMessage("You must be level " + DUAL_CLASS_MIN_LEVEL + " or higher to use Dual Class.");
+			LOGGER.info("Dual class access denied for " + player.getName() + ": level " + player.getLevel() + " < " + DUAL_CLASS_MIN_LEVEL + ".");
 			return false;
 		}
 		
@@ -675,6 +702,18 @@ public class ClassMaster extends Script implements IXmlReader
 		if (player.isInCombat() || player.isInDuel() || player.isInOlympiadMode() || player.isInObserverMode())
 		{
 			player.sendMessage("You cannot change classes while in combat or special modes.");
+			return false;
+		}
+		
+		if (player.isTeleporting())
+		{
+			player.sendMessage("You cannot change classes while teleporting.");
+			return false;
+		}
+		
+		if ((player.getPvpFlag() > 0) || player.isInsideZone(ZoneId.PVP) || player.isInsideZone(ZoneId.SIEGE))
+		{
+			player.sendMessage("You cannot change classes while in PvP.");
 			return false;
 		}
 		
@@ -715,6 +754,26 @@ public class ClassMaster extends Script implements IXmlReader
 		}
 		
 		return true;
+	}
+	
+	private boolean isMainClassAwakened(Player player)
+	{
+		return CategoryData.getInstance().isInCategory(CategoryType.SIXTH_CLASS_GROUP, player.getBaseClass());
+	}
+	
+	private String buildDualClassButtons(Player player)
+	{
+		if (!isMainClassAwakened(player))
+		{
+			return "";
+		}
+		
+		if (player.hasDualClass())
+		{
+			return "<Button ALIGN=LEFT ICON=\"NORMAL\" action=\"bypass -h Quest ClassMaster dualclass_change\">\"Alterar Dual Class.\"</Button>";
+		}
+		
+		return "<Button ALIGN=LEFT ICON=\"NORMAL\" action=\"bypass -h Quest ClassMaster dualclass_choose\">\"Escolher Dual Class.\"</Button>";
 	}
 	
 	private void showDualClassGroupList(Player player, Npc npc, String title, String actionPrefix)
@@ -781,6 +840,7 @@ public class ClassMaster extends Script implements IXmlReader
 		if (!getDualClasses(player, null).contains(PlayerClass.getPlayerClass(classId)))
 		{
 			player.sendMessage("Invalid dual class selection.");
+			LOGGER.warning("Dual class create denied for " + player.getName() + ": invalid class " + classId + ".");
 			return;
 		}
 		
@@ -809,6 +869,7 @@ public class ClassMaster extends Script implements IXmlReader
 			player.addItem(ItemProcessType.REWARD, CHAOS_POMANDER_DUAL_CLASS, 2, player, true);
 			player.addItem(ItemProcessType.REWARD, PAULINAS_RGRADE_EQUIPMENT_SET, 1, player, true);
 			giveItems(player, getPowerItemId(player), 1);
+			LOGGER.info("Player " + player.getName() + " chose dual class " + classId + " via ClassMaster.");
 		}
 	}
 	
@@ -817,6 +878,7 @@ public class ClassMaster extends Script implements IXmlReader
 		if (!getDualClasses(player, null).contains(PlayerClass.getPlayerClass(classId)))
 		{
 			player.sendMessage("Invalid dual class selection.");
+			LOGGER.warning("Dual class change denied for " + player.getName() + ": invalid class " + classId + ".");
 			return;
 		}
 		
@@ -827,6 +889,7 @@ public class ClassMaster extends Script implements IXmlReader
 		}
 		
 		player.reduceAdena(ItemProcessType.FEE, PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS, npc, true);
+		LOGGER.info("Player " + player.getName() + " paid " + PlayerConfig.FEE_DELETE_DUALCLASS_SKILLS + " Adena to change dual class.");
 		clearDualClassSkills(player, npc);
 		
 		final int level = player.getLevel();
@@ -845,6 +908,7 @@ public class ClassMaster extends Script implements IXmlReader
 			player.sendSkillList();
 			takeItems(player, CHAOS_POMANDER_DUAL_CLASS, -1);
 			giveItems(player, CHAOS_POMANDER_DUAL_CLASS, 2);
+			LOGGER.info("Player " + player.getName() + " changed dual class to " + classId + " via ClassMaster.");
 		}
 		
 		addExpAndSp(player, (ExperienceData.getInstance().getExpForLevel(level) + 1) - player.getExp(), 0);
