@@ -127,6 +127,7 @@ import org.l2jmobius.gameserver.managers.CursedWeaponsManager;
 import org.l2jmobius.gameserver.managers.DuelManager;
 import org.l2jmobius.gameserver.managers.FortManager;
 import org.l2jmobius.gameserver.managers.FortSiegeManager;
+import org.l2jmobius.gameserver.managers.FourthClassSkillTreeManager;
 import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
 import org.l2jmobius.gameserver.managers.HandysBlockCheckerManager;
 import org.l2jmobius.gameserver.managers.IdManager;
@@ -2889,6 +2890,8 @@ public class Player extends Playable
 			
 			// Add AutoGet skills and normal skills and/or learnByFS depending on configurations.
 			rewardSkills();
+			FourthClassSkillTreeManager.getInstance().removeAllFourthClassSkillsFromPlayer(this);
+			FourthClassSkillTreeManager.getInstance().applyLearnedSkills(this, getActiveClass(), isDualClassActive());
 			
 			if (!isGM() && PlayerConfig.DECREASE_SKILL_LEVEL)
 			{
@@ -8753,6 +8756,8 @@ public class Player extends Playable
 				}
 			}
 		}
+
+		FourthClassSkillTreeManager.getInstance().applyLearnedSkills(this, getActiveClass(), isDualClassActive());
 	}
 	
 	/**

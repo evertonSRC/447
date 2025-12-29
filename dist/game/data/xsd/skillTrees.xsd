@@ -81,7 +81,7 @@
 												<xs:attribute name="lvl" type="xs:positiveInteger" use="required" />
 											</xs:complexType>
 										</xs:element>
-										<xs:element name="item" minOccurs="0" maxOccurs="2">
+										<xs:element name="item" minOccurs="0" maxOccurs="unbounded">
 											<xs:complexType>
 												<xs:attribute name="id" type="xs:normalizedString" use="required" />
 												<xs:attribute name="count" type="xs:positiveInteger" use="required" />
@@ -143,6 +143,7 @@
 									<xs:enumeration value="collectSkillTree" />
 									<xs:enumeration value="dualClassSkillTree" />
 									<xs:enumeration value="fishingSkillTree" />
+									<xs:enumeration value="fourthClassSkillTree" />
 									<xs:enumeration value="gameMasterAuraSkillTree" />
 									<xs:enumeration value="gameMasterSkillTree" />
 									<xs:enumeration value="heroSkillTree" />
