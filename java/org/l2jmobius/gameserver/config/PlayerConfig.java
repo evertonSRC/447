@@ -240,6 +240,8 @@ public class PlayerConfig
 	public static boolean SHOW_INTRO_VIDEO;
 	public static int PLAYER_MOVEMENT_BLOCK_TIME;
 	public static long ABILITY_POINTS_RESET_SP;
+	public static int BASE_ATTRIBUTE_RESET_ITEM_ID;
+	public static long BASE_ATTRIBUTE_RESET_ITEM_COUNT;
 	public static int START_HOMUNCULUS_COUNT;
 	public static int MAX_HOMUNCULUS_COUNT;
 	
@@ -571,6 +573,8 @@ public class PlayerConfig
 		SHOW_INTRO_VIDEO = config.getBoolean("ShowIntroVideo", true);
 		PLAYER_MOVEMENT_BLOCK_TIME = config.getInt("NpcTalkBlockingTime", 0) * 1000;
 		ABILITY_POINTS_RESET_SP = config.getLong("AbilityPointsResetSP", 50000);
+		BASE_ATTRIBUTE_RESET_ITEM_ID = config.getInt("BaseAttributeResetItemId", 57);
+		BASE_ATTRIBUTE_RESET_ITEM_COUNT = config.getLong("BaseAttributeResetItemCount", 1000);
 		START_HOMUNCULUS_COUNT = config.getInt("StartHomunculusCount", 3);
 		MAX_HOMUNCULUS_COUNT = config.getInt("MaxHomunculusCount", 9);
 		if (MAX_HOMUNCULUS_COUNT < START_HOMUNCULUS_COUNT)
