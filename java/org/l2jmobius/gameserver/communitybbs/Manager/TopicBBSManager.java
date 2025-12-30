@@ -143,6 +143,12 @@ public class TopicBBSManager extends BaseBBSManager
 		{
 			showTopics(player.getMemo(), player, 1, player.getMemo().getID());
 		}
+		else if (command.equals("_bbsmemo;reset"))
+		{
+			final FourthClassSkillTreeManager.LearnResult result = FourthClassSkillTreeManager.getInstance().resetFourthClassSkillTree(player);
+			player.sendMessage(result.getMessage());
+			showTopics(player.getMemo(), player, 1, player.getMemo().getID());
+		}
 		else if (command.startsWith("_bbstopics;read"))
 		{
 			final StringTokenizer st = new StringTokenizer(command, ";");
@@ -247,8 +253,9 @@ public class TopicBBSManager extends BaseBBSManager
 		final FourthClassSkillTreeManager.FourthClassPoints mainPoints = FourthClassSkillTreeManager.getInstance().getPointsSummary(player, false);
 		final FourthClassSkillTreeManager.FourthClassPoints dualPoints = FourthClassSkillTreeManager.getInstance().getPointsSummary(player, true);
 		html.append("<table border=0 cellspacing=0 cellpadding=3 width=610 bgcolor=333333>");
-		html.append("<tr><td><font color=\"LEVEL\">Pontos Fourth Class (MAIN): Usados ").append(mainPoints.getUsed()).append(" / Restantes ").append(mainPoints.getRemaining()).append(" / Total ").append(mainPoints.getTotal()).append("</font></td></tr>");
-		html.append("<tr><td><font color=\"LEVEL\">Pontos Fourth Class (DUAL): Usados ").append(dualPoints.getUsed()).append(" / Restantes ").append(dualPoints.getRemaining()).append(" / Total ").append(dualPoints.getTotal()).append("</font></td></tr>");
+		html.append("<tr><td><font color=\"LEVEL\">Pontos Fourth Class (MAIN): Disponíveis ").append(mainPoints.getAvailable()).append(" / Usados ").append(mainPoints.getUsed()).append(" / Ganhos ").append(mainPoints.getEarned()).append("</font></td></tr>");
+		html.append("<tr><td><font color=\"LEVEL\">Pontos Fourth Class (DUAL): Disponíveis ").append(dualPoints.getAvailable()).append(" / Usados ").append(dualPoints.getUsed()).append(" / Ganhos ").append(dualPoints.getEarned()).append("</font></td></tr>");
+		html.append("<tr><td align=center><button value=\"Resetar Skill Tree\" action=\"bypass _bbsmemo;reset\" back=\"l2ui_ch3.smallbutton2_down\" width=180 height=22 fore=\"l2ui_ch3.smallbutton2\"></td></tr>");
 		html.append("</table><img src=\"L2UI.squaregray\" width=\"610\" height=\"1\">");
 		final DateFormat dateFormat = DateFormat.getInstance();
 		for (int i = 0, j = getMaxID(forum) + 1; i < (12 * index); j--)

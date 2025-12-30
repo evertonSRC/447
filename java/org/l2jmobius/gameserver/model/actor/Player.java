@@ -889,6 +889,10 @@ public class Player extends Playable
 
 	private int _fourthClassUsedPointsMain = -1;
 	private int _fourthClassUsedPointsDual = -1;
+	private int _fourthClassEarnedPointsMain = -1;
+	private int _fourthClassEarnedPointsDual = -1;
+	private int _fourthClassLastLevelAwardedMain = -1;
+	private int _fourthClassLastLevelAwardedDual = -1;
 	
 	/** Skills queued because a skill is already in progress */
 	private SkillUseHolder _queuedSkill;
@@ -15583,7 +15587,10 @@ public class Player extends Playable
 
 	public boolean hasFourthClassPointsLoaded(boolean dual)
 	{
-		return (dual ? _fourthClassUsedPointsDual : _fourthClassUsedPointsMain) >= 0;
+		final int usedPoints = dual ? _fourthClassUsedPointsDual : _fourthClassUsedPointsMain;
+		final int earnedPoints = dual ? _fourthClassEarnedPointsDual : _fourthClassEarnedPointsMain;
+		final int lastLevel = dual ? _fourthClassLastLevelAwardedDual : _fourthClassLastLevelAwardedMain;
+		return (usedPoints >= 0) && (earnedPoints >= 0) && (lastLevel >= 0);
 	}
 
 	public int getFourthClassUsedPoints(boolean dual)
@@ -15600,6 +15607,40 @@ public class Player extends Playable
 		else
 		{
 			_fourthClassUsedPointsMain = points;
+		}
+	}
+
+	public int getFourthClassEarnedPoints(boolean dual)
+	{
+		return dual ? _fourthClassEarnedPointsDual : _fourthClassEarnedPointsMain;
+	}
+
+	public void setFourthClassEarnedPoints(boolean dual, int points)
+	{
+		if (dual)
+		{
+			_fourthClassEarnedPointsDual = points;
+		}
+		else
+		{
+			_fourthClassEarnedPointsMain = points;
+		}
+	}
+
+	public int getFourthClassLastLevelAwarded(boolean dual)
+	{
+		return dual ? _fourthClassLastLevelAwardedDual : _fourthClassLastLevelAwardedMain;
+	}
+
+	public void setFourthClassLastLevelAwarded(boolean dual, int level)
+	{
+		if (dual)
+		{
+			_fourthClassLastLevelAwardedDual = level;
+		}
+		else
+		{
+			_fourthClassLastLevelAwardedMain = level;
 		}
 	}
 	

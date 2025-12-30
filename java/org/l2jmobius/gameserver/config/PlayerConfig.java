@@ -240,7 +240,10 @@ public class PlayerConfig
 	public static boolean SHOW_INTRO_VIDEO;
 	public static int PLAYER_MOVEMENT_BLOCK_TIME;
 	public static long ABILITY_POINTS_RESET_SP;
-	public static int FOURTH_CLASS_SKILLTREE_TOTAL_POINTS;
+	public static int FOURTH_CLASS_SKILLTREE_POINTS_START_LEVEL;
+	public static int FOURTH_CLASS_SKILLTREE_POINTS_CAP;
+	public static int FOURTH_CLASS_SKILLTREE_RESET_COST_ITEM_ID;
+	public static long FOURTH_CLASS_SKILLTREE_RESET_COST_ITEM_COUNT;
 	public static int BASE_ATTRIBUTE_RESET_ITEM_ID;
 	public static long BASE_ATTRIBUTE_RESET_ITEM_COUNT;
 	public static int START_HOMUNCULUS_COUNT;
@@ -574,7 +577,10 @@ public class PlayerConfig
 		SHOW_INTRO_VIDEO = config.getBoolean("ShowIntroVideo", true);
 		PLAYER_MOVEMENT_BLOCK_TIME = config.getInt("NpcTalkBlockingTime", 0) * 1000;
 		ABILITY_POINTS_RESET_SP = config.getLong("AbilityPointsResetSP", 50000);
-		FOURTH_CLASS_SKILLTREE_TOTAL_POINTS = config.getInt("FourthClassSkillTreeTotalPoints", 100);
+		FOURTH_CLASS_SKILLTREE_POINTS_START_LEVEL = config.getInt("FourthClassSkillTreePointsStartLevel", 1);
+		FOURTH_CLASS_SKILLTREE_POINTS_CAP = config.getInt("FourthClassSkillTreePointsCap", config.getInt("FourthClassSkillTreeTotalPoints", 100));
+		FOURTH_CLASS_SKILLTREE_RESET_COST_ITEM_ID = config.getInt("FourthClassSkillTreeResetCostItemId", 57);
+		FOURTH_CLASS_SKILLTREE_RESET_COST_ITEM_COUNT = config.getLong("FourthClassSkillTreeResetCostItemCount", 1000);
 		BASE_ATTRIBUTE_RESET_ITEM_ID = config.getInt("BaseAttributeResetItemId", 57);
 		BASE_ATTRIBUTE_RESET_ITEM_COUNT = config.getLong("BaseAttributeResetItemCount", 1000);
 		START_HOMUNCULUS_COUNT = config.getInt("StartHomunculusCount", 3);
