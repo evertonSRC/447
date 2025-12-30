@@ -920,9 +920,17 @@ public class ClassMaster extends Script implements IXmlReader
 		clearDualClassSkills(player, npc);
 		
 		final long dualClassExp = dualClass.getExp();
+		final int dualClassLevel = dualClass.getLevel();
 		final int classIndex = dualClass.getClassIndex();
 		if (player.modifySubClass(classIndex, classId, true))
 		{
+			final SubClassHolder updatedDualClass = player.getSubClasses().get(classIndex);
+			if (updatedDualClass != null)
+			{
+				updatedDualClass.setExp(dualClassExp);
+				updatedDualClass.setLevel(dualClassLevel);
+			}
+			
 			player.abortCast();
 			player.stopAllEffectsExceptThoseThatLastThroughDeath();
 			player.stopAllEffects();
@@ -936,7 +944,7 @@ public class ClassMaster extends Script implements IXmlReader
 			takeItems(player, CHAOS_POMANDER_DUAL_CLASS, -1);
 			giveItems(player, CHAOS_POMANDER_DUAL_CLASS, 2);
 			LOGGER.info("Player " + player.getName() + " changed dual class to " + classId + " via ClassMaster.");
-			addExpAndSp(player, dualClassExp - player.getExp(), 0);
+			player.broadcastUserInfo();
 		}
 	}
 	
