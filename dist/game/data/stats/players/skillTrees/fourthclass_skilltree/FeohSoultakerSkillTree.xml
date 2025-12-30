@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <list xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../xsd/skillTrees.xsd">
-	<skillTree type="fourthClassSkillTree" classId="152">
+	<skillTree type="fourthClassSkillTree" classId="167">
 		<!-- Warrior's Tree -->
 		<skill skillName="Berserker Might" skillId="31051" skillLevel="1" getLevel="85" treeId="1" row="1" column="1" />
 		<skill skillName="Berserker Might" skillId="31051" skillLevel="2" getLevel="85" treeId="1" row="1" column="1" />

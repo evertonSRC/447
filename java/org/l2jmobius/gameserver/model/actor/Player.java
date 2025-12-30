@@ -2891,7 +2891,7 @@ public class Player extends Playable
 			// Add AutoGet skills and normal skills and/or learnByFS depending on configurations.
 			rewardSkills();
 			FourthClassSkillTreeManager.getInstance().removeAllFourthClassSkillsFromPlayer(this);
-			FourthClassSkillTreeManager.getInstance().applyLearnedSkills(this, getActiveClass(), isDualClassActive());
+			FourthClassSkillTreeManager.getInstance().applyLearnedSkills(this, getActiveClass());
 			
 			if (!isGM() && PlayerConfig.DECREASE_SKILL_LEVEL)
 			{
@@ -8757,7 +8757,8 @@ public class Player extends Playable
 			}
 		}
 
-		FourthClassSkillTreeManager.getInstance().applyLearnedSkills(this, getActiveClass(), isDualClassActive());
+		FourthClassSkillTreeManager.getInstance().removeAllFourthClassSkillsFromPlayer(this);
+		FourthClassSkillTreeManager.getInstance().applyLearnedSkills(this, getActiveClass());
 	}
 	
 	/**
