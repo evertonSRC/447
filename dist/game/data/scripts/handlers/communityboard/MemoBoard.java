@@ -102,7 +102,7 @@ public class MemoBoard implements IWriteBoardHandler
 	private void showPage(Player player, String message, boolean success)
 	{
 		final FourthClassSkillTreeManager manager = FourthClassSkillTreeManager.getInstance();
-		manager.loadPoints(player, player.isDualClassActive());
+		manager.loadPoints(player);
 		final int classId = player.getActiveClass();
 		final PlayerClass playerClass = PlayerClass.getPlayerClass(classId);
 		final String mode = player.isDualClassActive() ? "Dual Class" : "Main Class";
