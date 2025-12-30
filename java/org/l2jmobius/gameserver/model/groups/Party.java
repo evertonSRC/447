@@ -922,7 +922,6 @@ public class Party extends AbstractPlayerGroup
 				exp = calculateExpSpPartyCutoff(member.asPlayer(), topLvl, exp, sp, target.useVitalityRate());
 				if (exp > 0)
 				{
-					member.updateVitalityPoints(target.getVitalityPoints(member.getLevel(), exp, target.isRaid()), true, false);
 					PcCafePointsManager.getInstance().givePcCafePoint(member, exp);
 					if (member.getSymbolSealPoints() > 0)
 					{

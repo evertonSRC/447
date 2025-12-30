@@ -60,7 +60,7 @@ public class PartySmallWindowAll extends ServerPacket
 				buffer.writeInt(member.getMaxHp());
 				buffer.writeInt((int) member.getCurrentMp());
 				buffer.writeInt(member.getMaxMp());
-				buffer.writeInt(member.getVitalityPoints());
+				buffer.writeInt(member.getStaminaPointsForClient());
 				buffer.writeByte(member.getLevel());
 				buffer.writeShort(member.getPlayerClass().getId());
 				buffer.writeByte(1); // Unk

@@ -277,6 +277,11 @@ public class CreatureStat
 		return (int) getValue(Stat.MAX_MP);
 	}
 	
+	public int getMaxStamina()
+	{
+		return (int) getValue(Stat.MAX_STAMINA);
+	}
+	
 	public int getMaxRecoverableMp()
 	{
 		return (int) getValue(Stat.MAX_RECOVERABLE_MP, getMaxMp());

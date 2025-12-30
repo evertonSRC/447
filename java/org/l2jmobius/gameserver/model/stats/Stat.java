@@ -33,6 +33,7 @@ import org.l2jmobius.gameserver.model.stats.finalizers.MEvasionRateFinalizer;
 import org.l2jmobius.gameserver.model.stats.finalizers.MaxCpFinalizer;
 import org.l2jmobius.gameserver.model.stats.finalizers.MaxHpFinalizer;
 import org.l2jmobius.gameserver.model.stats.finalizers.MaxMpFinalizer;
+import org.l2jmobius.gameserver.model.stats.finalizers.MaxStaminaFinalizer;
 import org.l2jmobius.gameserver.model.stats.finalizers.MpVampiricChanceFinalizer;
 import org.l2jmobius.gameserver.model.stats.finalizers.PAccuracyFinalizer;
 import org.l2jmobius.gameserver.model.stats.finalizers.PAttackFinalizer;
@@ -64,6 +65,7 @@ public enum Stat
 	MAX_HP("maxHp", new MaxHpFinalizer()),
 	MAX_MP("maxMp", new MaxMpFinalizer()),
 	MAX_CP("maxCp", new MaxCpFinalizer()),
+	MAX_STAMINA("maxStamina", new MaxStaminaFinalizer()),
 	MAX_RECOVERABLE_HP("maxRecoverableHp"), // The maximum HP that is able to be recovered trough heals
 	MAX_RECOVERABLE_MP("maxRecoverableMp"),
 	MAX_RECOVERABLE_CP("maxRecoverableCp"),

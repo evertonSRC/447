@@ -90,6 +90,8 @@ public class Skill
 	private final boolean _staticReuse;
 	/** MP consumption. */
 	private final int _mpConsume;
+	/** Stamina consumption. */
+	private final int _staminaConsume;
 	/** Initial MP consumption. */
 	private final int _mpInitialConsume;
 	/** MP consumption per channeling. */
@@ -233,6 +235,7 @@ public class Skill
 		_traitType = set.getEnum("trait", TraitType.class, TraitType.NONE);
 		_staticReuse = set.getBoolean("staticReuse", false);
 		_mpConsume = set.getInt("mpConsume", 0);
+		_staminaConsume = set.getInt("staminaConsume", 0);
 		_mpInitialConsume = set.getInt("mpInitialConsume", 0);
 		_mpPerChanneling = set.getInt("mpPerChanneling", _mpConsume);
 		_hpConsume = set.getInt("hpConsume", 0);
@@ -785,6 +788,11 @@ public class Skill
 	public int getMpConsume()
 	{
 		return _mpConsume;
+	}
+	
+	public int getStaminaConsume()
+	{
+		return _staminaConsume;
 	}
 	
 	/**

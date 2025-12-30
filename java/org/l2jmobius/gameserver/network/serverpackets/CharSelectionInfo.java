@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 
 import org.l2jmobius.commons.database.DatabaseFactory;
 import org.l2jmobius.commons.network.WritableBuffer;
-import org.l2jmobius.gameserver.config.RatesConfig;
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.ServerConfig;
 import org.l2jmobius.gameserver.config.custom.MultilingualSupportConfig;
 import org.l2jmobius.gameserver.config.custom.OfflinePlayConfig;
@@ -42,6 +42,7 @@ import org.l2jmobius.gameserver.data.xml.ExperienceData;
 import org.l2jmobius.gameserver.model.VariationInstance;
 import org.l2jmobius.gameserver.model.World;
 import org.l2jmobius.gameserver.model.actor.Player;
+import org.l2jmobius.gameserver.model.actor.stat.PlayerStat;
 import org.l2jmobius.gameserver.model.clan.Clan;
 import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
 import org.l2jmobius.gameserver.model.olympiad.Hero;
@@ -274,9 +275,9 @@ public class CharSelectionInfo extends ServerPacket
 			buffer.writeInt(0); // Pet Food Level
 			buffer.writeDouble(0); // Current pet HP
 			buffer.writeDouble(0); // Current pet MP
-			buffer.writeInt(charInfoPackage.getVitalityPoints()); // Vitality
-			buffer.writeInt((int) RatesConfig.RATE_VITALITY_EXP_MULTIPLIER * 100); // Vitality Percent
-			buffer.writeInt(charInfoPackage.getVitalityItemsUsed()); // Remaining vitality item uses
+			buffer.writeInt(charInfoPackage.getVitalityPoints()); // Stamina (mapped to vitality points)
+			buffer.writeInt(100); // Stamina Percent
+			buffer.writeInt(0); // Remaining vitality item uses
 			buffer.writeInt(charInfoPackage.getAccessLevel() != -100); // Char is active or not
 			buffer.writeByte(charInfoPackage.isNoble());
 			buffer.writeByte(Hero.getInstance().isHero(charInfoPackage.getObjectId()) ? 2 : 0); // Hero glow
@@ -370,6 +371,31 @@ public class CharSelectionInfo extends ServerPacket
 		}
 	}
 	
+	private static Integer getOptionalInt(ResultSet rset, String column)
+	{
+		try
+		{
+			final int value = rset.getInt(column);
+			return rset.wasNull() ? null : value;
+		}
+		catch (Exception e)
+		{
+			return null;
+		}
+	}
+	
+	private static int toStaminaVitalityPoints(int currentStamina, int level)
+	{
+		final double maxStamina = PlayerConfig.BASE_STAMINA + (PlayerConfig.STAMINA_PER_LEVEL * level);
+		if (maxStamina <= 0)
+		{
+			return 0;
+		}
+		
+		final double clamped = Math.max(0, Math.min(currentStamina, maxStamina));
+		return (int) Math.round((clamped / maxStamina) * PlayerStat.MAX_VITALITY_POINTS);
+	}
+	
 	private static CharacterInfoHolder restoreChar(ResultSet chardata) throws Exception
 	{
 		final int objectId = chardata.getInt("charId");
@@ -391,7 +417,8 @@ public class CharSelectionInfo extends ServerPacket
 		
 		final CharacterInfoHolder charInfopackage = new CharacterInfoHolder(objectId, name);
 		charInfopackage.setAccessLevel(chardata.getInt("accesslevel"));
-		charInfopackage.setLevel(chardata.getInt("level"));
+		final int level = chardata.getInt("level");
+		charInfopackage.setLevel(level);
 		charInfopackage.setMaxHp(chardata.getInt("maxhp"));
 		charInfopackage.setCurrentHp(chardata.getDouble("curhp"));
 		charInfopackage.setMaxMp(chardata.getInt("maxmp"));
@@ -405,7 +432,6 @@ public class CharSelectionInfo extends ServerPacket
 		charInfopackage.setSex(chardata.getInt("sex"));
 		charInfopackage.setExp(chardata.getLong("exp"));
 		charInfopackage.setSp(chardata.getLong("sp"));
-		charInfopackage.setVitalityPoints(chardata.getInt("vitality_points"));
 		charInfopackage.setClanId(chardata.getInt("clanid"));
 		charInfopackage.setRace(chardata.getInt("race"));
 		int baseClassId = chardata.getInt("base_class");
@@ -447,6 +473,13 @@ public class CharSelectionInfo extends ServerPacket
 		{
 			loadCharacterSubclassInfo(charInfopackage, objectId, activeClassId);
 		}
+		
+		Integer currentStamina = getOptionalInt(chardata, "current_stamina");
+		if (currentStamina == null)
+		{
+			currentStamina = (int) Math.round(PlayerConfig.BASE_STAMINA + (PlayerConfig.STAMINA_PER_LEVEL * level));
+		}
+		charInfopackage.setVitalityPoints(toStaminaVitalityPoints(currentStamina, level));
 		
 		charInfopackage.setClassId(activeClassId);
 		

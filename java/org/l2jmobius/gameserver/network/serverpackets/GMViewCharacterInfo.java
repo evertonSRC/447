@@ -178,7 +178,7 @@ public class GMViewCharacterInfo extends ServerPacket
 		}
 		
 		buffer.writeInt(_player.getFame());
-		buffer.writeInt(_player.getVitalityPoints());
+		buffer.writeInt(_player.getStaminaPointsForClient());
 		buffer.writeInt(0);
 		buffer.writeInt(0);
 	}
