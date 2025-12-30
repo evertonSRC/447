@@ -242,7 +242,15 @@ public class MemoBoard implements IWriteBoardHandler
 		final StringBuilder sb = new StringBuilder();
 		final boolean maxed = cell.getCurrentLevel() >= cell.getMaxLevel();
 		final String color = maxed ? "00AA00" : (cell.canLearn() ? "FFFFFF" : "999999");
-		sb.append("<font color=\"").append(color).append("\">").append(name).append("</font><br1>");
+		sb.append("<font color=\"").append(color).append("\">").append(name).append("</font>");
+		final String tooltipText = learn.getTooltipText();
+		if (!tooltipText.isEmpty())
+		{
+			sb.append(" <button width=16 height=16 back=\"icon.etc_question_mark_i00\" fore=\"icon.etc_question_mark_i00\" tooltip=\"")
+				.append(escapeHtml(tooltipText))
+				.append("\">");
+		}
+		sb.append("<br1>");
 		sb.append("Lv ").append(Math.min(cell.getCurrentLevel(), cell.getMaxLevel())).append("/").append(cell.getMaxLevel()).append("<br1>");
 		sb.append("Req Lv: ").append(learn.getGetLevel()).append("<br1>");
 		if (learn.getPointsRequired() > 0)
@@ -271,6 +279,20 @@ public class MemoBoard implements IWriteBoardHandler
 		}
 
 		return sb.toString();
+	}
+
+	private String escapeHtml(String text)
+	{
+		if (text == null || text.isEmpty())
+		{
+			return "";
+		}
+
+		return text.replace("&", "&amp;")
+			.replace("<", "&lt;")
+			.replace(">", "&gt;")
+			.replace("\"", "&quot;")
+			.replace("'", "&#39;");
 	}
 
 	private String buildPrereq(Collection<SkillHolder> prereqs)

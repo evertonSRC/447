@@ -54,6 +54,7 @@ public class SkillLearn
 	private final int _row;
 	private final int _column;
 	private final int _pointsRequired;
+	private final String _tooltipText;
 	
 	/**
 	 * Constructor for SkillLearn.
@@ -75,6 +76,7 @@ public class SkillLearn
 		_row = set.getInt("row", 0);
 		_column = set.getInt("column", 0);
 		_pointsRequired = set.getInt("pointsRequired", 0);
+		_tooltipText = set.getString("tooltiptext", "");
 	}
 	
 	/**
@@ -273,6 +275,11 @@ public class SkillLearn
 	public int getPointsRequired()
 	{
 		return _pointsRequired;
+	}
+
+	public String getTooltipText()
+	{
+		return _tooltipText;
 	}
 	
 	@Override
