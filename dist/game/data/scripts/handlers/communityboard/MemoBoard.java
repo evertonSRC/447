@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.data.xml.ClassListData;
 import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.data.xml.SkillData;
@@ -33,6 +34,7 @@ import org.l2jmobius.gameserver.data.xml.SkillTreeData;
 import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
 import org.l2jmobius.gameserver.handler.IWriteBoardHandler;
 import org.l2jmobius.gameserver.managers.FourthClassSkillTreeManager;
+import org.l2jmobius.gameserver.managers.FourthClassSkillTreeManager.FourthClassPoints;
 import org.l2jmobius.gameserver.managers.FourthClassSkillTreeManager.LearnResult;
 import org.l2jmobius.gameserver.model.SkillLearn;
 import org.l2jmobius.gameserver.model.actor.Player;
@@ -79,6 +81,12 @@ public class MemoBoard implements IWriteBoardHandler
 				success = result.isSuccess();
 			}
 		}
+		else if (command.startsWith("_bbsmemo;reset"))
+		{
+			final LearnResult result = FourthClassSkillTreeManager.getInstance().resetFourthClassSkillTree(player);
+			message = result.getMessage();
+			success = result.isSuccess();
+		}
 
 		showPage(player, message, success);
 		return true;
@@ -100,17 +108,20 @@ public class MemoBoard implements IWriteBoardHandler
 		final String className = ClassListData.getInstance().getClass(classId) != null ? ClassListData.getInstance().getClass(classId).getClassName() : String.valueOf(classId);
 		final Map<Integer, Integer> learned = manager.getLearnedSkills(player.getObjectId(), classId);
 		final Collection<SkillLearn> skills = playerClass != null ? SkillTreeData.getInstance().getFourthClassSkillTree(playerClass).values() : Collections.emptyList();
+		final FourthClassPoints points = manager.getPointsSummary(player, player.isDualClassActive());
+		final int cap = Math.max(0, PlayerConfig.FOURTH_CLASS_SKILLTREE_POINTS_CAP);
 
-		final String html = buildPage(player, className, mode, buildTrees(player, playerClass, skills, learned), message, success);
+		final String html = buildPage(player, className, mode, buildPointsLine(points, cap), buildTrees(player, playerClass, skills, learned), message, success);
 		CommunityBoardHandler.getInstance().addBypass(player, "Fourth Class Skill Tree", "_bbsmemo");
 		CommunityBoardHandler.separateAndSend(html, player);
 	}
 
-	private String buildPage(Player player, String className, String mode, String trees, String message, boolean success)
+	private String buildPage(Player player, String className, String mode, String pointsLine, String trees, String message, boolean success)
 	{
 		String html = HtmCache.getInstance().getHtm(player, HTML_PATH);
 		html = html.replace("%class_name%", className);
 		html = html.replace("%mode%", mode);
+		html = html.replace("%points_line%", pointsLine);
 		html = html.replace("%trees%", trees);
 		if (message.isEmpty())
 		{
@@ -123,6 +134,11 @@ public class MemoBoard implements IWriteBoardHandler
 		}
 
 		return html;
+	}
+
+	private String buildPointsLine(FourthClassPoints points, int cap)
+	{
+		return "Pontos: Disp " + points.getAvailable() + " | Usados " + points.getUsed() + " | Total " + points.getEarned() + " / " + cap;
 	}
 
 	private String buildTrees(Player player, PlayerClass playerClass, Collection<SkillLearn> skills, Map<Integer, Integer> learned)

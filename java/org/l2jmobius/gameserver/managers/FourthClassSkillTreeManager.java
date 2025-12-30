@@ -509,18 +509,22 @@ public class FourthClassSkillTreeManager
 
 	private boolean savePoints(Player player, boolean dual, int usedPoints, int earnedPoints, int lastLevelAwarded)
 	{
+		final int cap = getPointsCap();
+		final int normalizedEarned = Math.min(cap, Math.max(0, earnedPoints));
+		final int normalizedUsed = Math.max(0, Math.min(usedPoints, normalizedEarned));
+		final int normalizedLastLevelAwarded = Math.max(0, lastLevelAwarded);
 		try (Connection con = DatabaseFactory.getConnection();
 			PreparedStatement statement = con.prepareStatement(SAVE_POINTS))
 		{
 			statement.setInt(1, player.getObjectId());
 			statement.setBoolean(2, dual);
-			statement.setInt(3, usedPoints);
-			statement.setInt(4, earnedPoints);
-			statement.setInt(5, lastLevelAwarded);
+			statement.setInt(3, normalizedUsed);
+			statement.setInt(4, normalizedEarned);
+			statement.setInt(5, normalizedLastLevelAwarded);
 			statement.execute();
-			player.setFourthClassUsedPoints(dual, usedPoints);
-			player.setFourthClassEarnedPoints(dual, earnedPoints);
-			player.setFourthClassLastLevelAwarded(dual, lastLevelAwarded);
+			player.setFourthClassUsedPoints(dual, normalizedUsed);
+			player.setFourthClassEarnedPoints(dual, normalizedEarned);
+			player.setFourthClassLastLevelAwarded(dual, normalizedLastLevelAwarded);
 			return true;
 		}
 		catch (Exception e)
@@ -594,10 +598,10 @@ public class FourthClassSkillTreeManager
 		final int pointsRequired = entry.getPointsRequired();
 		if (pointsRequired > 0)
 		{
-			final int points = countLearnedPoints(player, playerClass, entry.getTreeId(), learned);
+			final int points = countLearnedPoints(player, playerClass, learned);
 			if (points < pointsRequired)
 			{
-				return LearnValidation.fail("Você precisa de " + pointsRequired + " pontos nesta árvore.");
+				return LearnValidation.fail("Você precisa de " + pointsRequired + " pontos no total.");
 			}
 		}
 
@@ -639,16 +643,11 @@ public class FourthClassSkillTreeManager
 		return savedLevel;
 	}
 
-	private int countLearnedPoints(Player player, PlayerClass playerClass, int treeId, Map<Integer, Integer> learned)
+	private int countLearnedPoints(Player player, PlayerClass playerClass, Map<Integer, Integer> learned)
 	{
 		int points = 0;
 		for (SkillLearn learn : SkillTreeData.getInstance().getFourthClassSkillTree(playerClass).values())
 		{
-			if (learn.getTreeId() != treeId)
-			{
-				continue;
-			}
-
 			final int learnedLevel = getCurrentLevel(player, learned, learn.getSkillId());
 			if (learnedLevel >= learn.getSkillLevel())
 			{
