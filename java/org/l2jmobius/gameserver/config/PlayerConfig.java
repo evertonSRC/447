@@ -578,7 +578,19 @@ public class PlayerConfig
 		PLAYER_MOVEMENT_BLOCK_TIME = config.getInt("NpcTalkBlockingTime", 0) * 1000;
 		ABILITY_POINTS_RESET_SP = config.getLong("AbilityPointsResetSP", 50000);
 		FOURTH_CLASS_SKILLTREE_POINTS_START_LEVEL = config.getInt("FourthClassSkillTreePointsStartLevel", 1);
-		FOURTH_CLASS_SKILLTREE_POINTS_CAP = config.getInt("FourthClassSkillTreePointsCap", config.getInt("FourthClassSkillTreeTotalPoints", 100));
+		if (config.containsKey("FourthClassSkillTreePointsCap"))
+		{
+			FOURTH_CLASS_SKILLTREE_POINTS_CAP = config.getInt("FourthClassSkillTreePointsCap", 100);
+		}
+		else if (config.containsKey("FourthClassSkillTreeTotalPoints"))
+		{
+			FOURTH_CLASS_SKILLTREE_POINTS_CAP = config.getInt("FourthClassSkillTreeTotalPoints", 100);
+			LOGGER.warning("Config 'FourthClassSkillTreeTotalPoints' is deprecated. Use 'FourthClassSkillTreePointsCap' instead.");
+		}
+		else
+		{
+			FOURTH_CLASS_SKILLTREE_POINTS_CAP = config.getInt("FourthClassSkillTreePointsCap", 100);
+		}
 		FOURTH_CLASS_SKILLTREE_RESET_COST_ITEM_ID = config.getInt("FourthClassSkillTreeResetCostItemId", 57);
 		FOURTH_CLASS_SKILLTREE_RESET_COST_ITEM_COUNT = config.getLong("FourthClassSkillTreeResetCostItemCount", 1000);
 		BASE_ATTRIBUTE_RESET_ITEM_ID = config.getInt("BaseAttributeResetItemId", 57);
