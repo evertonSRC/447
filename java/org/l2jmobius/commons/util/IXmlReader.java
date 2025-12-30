@@ -41,6 +41,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import org.l2jmobius.commons.config.ThreadConfig;
@@ -90,11 +92,12 @@ public interface IXmlReader
 		{
 			factory.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
 			final DocumentBuilder builder = factory.newDocumentBuilder();
+			builder.setErrorHandler(createErrorHandler(file));
 			parseDocument(builder.parse(file), file);
 		}
 		catch (SAXParseException e)
 		{
-			LOGGER.log(Level.WARNING, "Error parsing " + file.getName() + " at line " + e.getLineNumber() + ", column " + e.getColumnNumber() + ".", e);
+			// Errors are already reported by the ErrorHandler with location details.
 		}
 		catch (Exception e)
 		{
@@ -724,6 +727,42 @@ public interface IXmlReader
 	default boolean isValidating()
 	{
 		return true;
+	}
+	
+	/**
+	 * Creates an ErrorHandler that logs XML validation and parsing issues with file context.
+	 * @param file the file being parsed
+	 * @return the error handler for the parser
+	 */
+	default ErrorHandler createErrorHandler(File file)
+	{
+		return new ErrorHandler()
+		{
+			@Override
+			public void warning(SAXParseException exception) throws SAXException
+			{
+				logException(Level.WARNING, "warning", exception);
+			}
+			
+			@Override
+			public void error(SAXParseException exception) throws SAXException
+			{
+				logException(Level.SEVERE, "error", exception);
+				throw exception;
+			}
+			
+			@Override
+			public void fatalError(SAXParseException exception) throws SAXException
+			{
+				logException(Level.SEVERE, "fatal error", exception);
+				throw exception;
+			}
+			
+			private void logException(Level level, String severity, SAXParseException exception)
+			{
+				LOGGER.log(level, "XML " + severity + " in " + file.getName() + " at line " + exception.getLineNumber() + ", column " + exception.getColumnNumber() + ": " + exception.getMessage());
+			}
+		};
 	}
 	
 	/**
