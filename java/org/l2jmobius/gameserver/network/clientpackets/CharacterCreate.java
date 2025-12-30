@@ -338,6 +338,11 @@ public class CharacterCreate extends ClientPacket
 			newChar.getStat().addSp(PlayerConfig.STARTING_SP);
 		}
 		
+		if (PlayerConfig.ENABLE_STAMINA)
+		{
+			newChar.setCurrentStamina(newChar.getMaxStamina(), true);
+		}
+		
 		final Collection<InitialEquipment> classEquipment = InitialEquipmentData.getInstance().getClassEquipment(newChar.getPlayerClass());
 		if (classEquipment != null)
 		{

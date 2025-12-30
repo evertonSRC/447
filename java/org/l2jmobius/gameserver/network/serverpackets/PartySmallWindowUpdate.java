@@ -99,7 +99,7 @@ public class PartySmallWindowUpdate extends AbstractMaskPacket<PartySmallWindowU
 		
 		if (containsMask(PartySmallWindowUpdateType.VITALITY_POINTS))
 		{
-			buffer.writeInt(_member.getVitalityPoints());
+			buffer.writeInt(_member.getStaminaPointsForClient());
 		}
 	}
 	

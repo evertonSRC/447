@@ -39,7 +39,7 @@ public class ExHomunculusHPSPVP extends ServerPacket
 	{
 		_hp = (int) player.getCurrentHp();
 		_sp = player.getSp();
-		_vp = player.getVitalityPoints();
+		_vp = player.getStaminaPointsForClient();
 	}
 	
 	@Override

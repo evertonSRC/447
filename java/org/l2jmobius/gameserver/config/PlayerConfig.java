@@ -117,6 +117,12 @@ public class PlayerConfig
 	public static boolean ENABLE_VITALITY;
 	public static int STARTING_VITALITY_POINTS;
 	public static boolean RAIDBOSS_USE_VITALITY;
+	public static boolean ENABLE_STAMINA;
+	public static double BASE_STAMINA;
+	public static double STAMINA_PER_LEVEL;
+	public static double STAMINA_REGEN_PER_SECOND;
+	public static boolean STAMINA_REGEN_IN_COMBAT;
+	public static long STAMINA_REGEN_DELAY_AFTER_USE_MS;
 	public static int MAX_SYMBOL_SEAL_POINTS;
 	public static int CONSUME_SYMBOL_SEAL_POINTS;
 	public static double MAX_BONUS_EXP;
@@ -397,6 +403,12 @@ public class PlayerConfig
 		ENABLE_VITALITY = config.getBoolean("EnableVitality", true);
 		STARTING_VITALITY_POINTS = config.getInt("StartingVitalityPoints", 140000);
 		RAIDBOSS_USE_VITALITY = config.getBoolean("RaidbossUseVitality", true);
+		ENABLE_STAMINA = config.getBoolean("EnableStamina", true);
+		BASE_STAMINA = config.getDouble("BaseStamina", 100);
+		STAMINA_PER_LEVEL = config.getDouble("StaminaPerLevel", 5);
+		STAMINA_REGEN_PER_SECOND = config.getDouble("StaminaRegenPerSecond", 5);
+		STAMINA_REGEN_IN_COMBAT = config.getBoolean("StaminaRegenInCombat", true);
+		STAMINA_REGEN_DELAY_AFTER_USE_MS = config.getLong("StaminaRegenDelayAfterUseMs", 0);
 		MAX_SYMBOL_SEAL_POINTS = config.getInt("MaxSymbolSealPoints", 7800);
 		CONSUME_SYMBOL_SEAL_POINTS = config.getInt("ConsumeSymbolSealPoints", 1);
 		MAX_BONUS_EXP = config.getDouble("MaxExpBonus", 0);

@@ -34,6 +34,7 @@ import org.l2jmobius.commons.util.Rnd;
 import org.l2jmobius.gameserver.ai.Action;
 import org.l2jmobius.gameserver.ai.Intention;
 import org.l2jmobius.gameserver.config.NpcConfig;
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.custom.ClassBalanceConfig;
 import org.l2jmobius.gameserver.config.custom.FakePlayersConfig;
 import org.l2jmobius.gameserver.data.xml.ActionData;
@@ -515,6 +516,32 @@ public class SkillCaster implements Runnable
 		}
 		
 		final StatusUpdate su = new StatusUpdate(caster);
+		
+		if (caster.isPlayer() && PlayerConfig.ENABLE_STAMINA)
+		{
+			final int staminaConsume = _skill.getStaminaConsume();
+			if (staminaConsume > 0)
+			{
+				final Player player = caster.asPlayer();
+				if (player.getCurrentStamina() + 1e-6 < staminaConsume)
+				{
+					final SystemMessage sm = new SystemMessage(SystemMessageId.S1);
+					sm.addString("Not enough Stamina.");
+					caster.sendPacket(sm);
+					if (LOGGER.isLoggable(Level.FINE))
+					{
+						LOGGER.fine("Stamina blocked skill " + _skill.getId() + " for " + player.getName() + " (need " + staminaConsume + ", have " + player.getCurrentStamina() + ").");
+					}
+					return false;
+				}
+				
+				player.reduceStamina(staminaConsume);
+				if (LOGGER.isLoggable(Level.FINE))
+				{
+					LOGGER.fine("Consumed " + staminaConsume + " stamina for skill " + _skill.getId() + " on " + player.getName() + ".");
+				}
+			}
+		}
 		
 		// Consume the required MP or stop casting if not enough.
 		final double mpConsume = _skill.getMpConsume() > 0 ? caster.getStat().getMpConsume(_skill) : 0;

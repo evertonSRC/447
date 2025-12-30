@@ -54,6 +54,7 @@ public class CreatureStatus
 	protected static final byte REGEN_FLAG_CP = 4;
 	private static final byte REGEN_FLAG_HP = 1;
 	private static final byte REGEN_FLAG_MP = 2;
+	protected static final byte REGEN_FLAG_STAMINA = 8;
 	
 	public CreatureStatus(Creature creature)
 	{
