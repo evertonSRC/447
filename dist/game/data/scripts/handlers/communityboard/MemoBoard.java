@@ -135,7 +135,7 @@ public class MemoBoard implements IWriteBoardHandler
 		final Map<Integer, List<SkillLearn>> trees = new TreeMap<>();
 		for (SkillLearn entry : skills)
 		{
-			trees.computeIfAbsent(entry.getTreeId(), _ -> new ArrayList<>()).add(entry);
+			trees.computeIfAbsent(entry.getTreeId(), key -> new ArrayList<>()).add(entry);
 		}
 
 		final StringBuilder sb = new StringBuilder();
@@ -160,7 +160,7 @@ public class MemoBoard implements IWriteBoardHandler
 		int maxColumn = 0;
 		for (SkillLearn learn : entries)
 		{
-			bySkill.computeIfAbsent(learn.getSkillId(), _ -> new ArrayList<>()).add(learn);
+			bySkill.computeIfAbsent(learn.getSkillId(), key -> new ArrayList<>()).add(learn);
 			maxRow = Math.max(maxRow, learn.getRow());
 			maxColumn = Math.max(maxColumn, learn.getColumn());
 		}
@@ -210,13 +210,13 @@ public class MemoBoard implements IWriteBoardHandler
 
 	private String buildSkillCell(Player player, SkillCell cell)
 	{
-		final SkillLearn learn = cell.targetLearn();
-		final String name = learn.getName().isEmpty() ? ("Skill " + cell.skillId()) : learn.getName();
+		final SkillLearn learn = cell.getTargetLearn();
+		final String name = learn.getName().isEmpty() ? ("Skill " + cell.getSkillId()) : learn.getName();
 		final StringBuilder sb = new StringBuilder();
-		final boolean maxed = cell.currentLevel() >= cell.maxLevel();
+		final boolean maxed = cell.getCurrentLevel() >= cell.getMaxLevel();
 		final String color = maxed ? "00AA00" : (cell.canLearn() ? "FFFFFF" : "999999");
 		sb.append("<font color=\"").append(color).append("\">").append(name).append("</font><br1>");
-		sb.append("Lv ").append(Math.min(cell.currentLevel(), cell.maxLevel())).append("/").append(cell.maxLevel()).append("<br1>");
+		sb.append("Lv ").append(Math.min(cell.getCurrentLevel(), cell.getMaxLevel())).append("/").append(cell.getMaxLevel()).append("<br1>");
 		sb.append("Req Lv: ").append(learn.getGetLevel()).append("<br1>");
 		if (learn.getPointsRequired() > 0)
 		{
@@ -236,7 +236,7 @@ public class MemoBoard implements IWriteBoardHandler
 		}
 		else if (cell.canLearn())
 		{
-			sb.append("<button value=\"Aprender\" action=\"bypass -h _bbsmemo;learn;").append(cell.skillId()).append(";").append(learn.getSkillLevel()).append("\" back=\"l2ui_ch3.smallbutton2_down\" fore=\"l2ui_ch3.smallbutton2\" width=80 height=20>");
+			sb.append("<button value=\"Aprender\" action=\"bypass -h _bbsmemo;learn;").append(cell.getSkillId()).append(";").append(learn.getSkillLevel()).append("\" back=\"l2ui_ch3.smallbutton2_down\" fore=\"l2ui_ch3.smallbutton2\" width=80 height=20>");
 		}
 		else
 		{
@@ -309,7 +309,46 @@ public class MemoBoard implements IWriteBoardHandler
 		return savedLevel;
 	}
 
-	private record SkillCell(int skillId, SkillLearn targetLearn, int currentLevel, int maxLevel, boolean canLearn)
+	private static final class SkillCell
 	{
+		private final int skillId;
+		private final SkillLearn targetLearn;
+		private final int currentLevel;
+		private final int maxLevel;
+		private final boolean canLearn;
+
+		private SkillCell(int skillId, SkillLearn targetLearn, int currentLevel, int maxLevel, boolean canLearn)
+		{
+			this.skillId = skillId;
+			this.targetLearn = targetLearn;
+			this.currentLevel = currentLevel;
+			this.maxLevel = maxLevel;
+			this.canLearn = canLearn;
+		}
+
+		private int getSkillId()
+		{
+			return skillId;
+		}
+
+		private SkillLearn getTargetLearn()
+		{
+			return targetLearn;
+		}
+
+		private int getCurrentLevel()
+		{
+			return currentLevel;
+		}
+
+		private int getMaxLevel()
+		{
+			return maxLevel;
+		}
+
+		private boolean canLearn()
+		{
+			return canLearn;
+		}
 	}
 }
