@@ -102,6 +102,7 @@ public class MemoBoard implements IWriteBoardHandler
 	private void showPage(Player player, String message, boolean success)
 	{
 		final FourthClassSkillTreeManager manager = FourthClassSkillTreeManager.getInstance();
+		manager.loadPoints(player, player.isDualClassActive());
 		final int classId = player.getActiveClass();
 		final PlayerClass playerClass = PlayerClass.getPlayerClass(classId);
 		final String mode = player.isDualClassActive() ? "Dual Class" : "Main Class";
@@ -111,17 +112,17 @@ public class MemoBoard implements IWriteBoardHandler
 		final FourthClassPoints points = manager.getPointsSummary(player, player.isDualClassActive());
 		final int cap = Math.max(0, PlayerConfig.FOURTH_CLASS_SKILLTREE_POINTS_CAP);
 
-		final String html = buildPage(player, className, mode, buildPointsLine(points, cap), buildTrees(player, playerClass, skills, learned), message, success);
+		final String html = buildPage(player, className, mode, buildPointsPanel(points, cap), buildTrees(player, playerClass, skills, learned), message, success);
 		CommunityBoardHandler.getInstance().addBypass(player, "Fourth Class Skill Tree", "_bbsmemo");
 		CommunityBoardHandler.separateAndSend(html, player);
 	}
 
-	private String buildPage(Player player, String className, String mode, String pointsLine, String trees, String message, boolean success)
+	private String buildPage(Player player, String className, String mode, String pointsPanel, String trees, String message, boolean success)
 	{
 		String html = HtmCache.getInstance().getHtm(player, HTML_PATH);
 		html = html.replace("%class_name%", className);
 		html = html.replace("%mode%", mode);
-		html = html.replace("%points_line%", pointsLine);
+		html = html.replace("%points_panel%", pointsPanel);
 		html = html.replace("%trees%", trees);
 		if (message.isEmpty())
 		{
@@ -136,9 +137,19 @@ public class MemoBoard implements IWriteBoardHandler
 		return html;
 	}
 
-	private String buildPointsLine(FourthClassPoints points, int cap)
+	private String buildPointsPanel(FourthClassPoints points, int cap)
 	{
-		return "Pontos disponíveis: " + points.getAvailable() + " | Pontos usados: " + points.getUsed() + " | Total ganhos/cap: " + points.getEarned() + " / " + cap;
+		final StringBuilder sb = new StringBuilder();
+		sb.append("<table border=0 cellspacing=0 cellpadding=2 width=730 bgcolor=222222>");
+		sb.append("<tr>");
+		sb.append("<td align=center><font color=\"LEVEL\">");
+		sb.append("Disponíveis: ").append(points.getAvailable());
+		sb.append(" | Usados: ").append(points.getUsed());
+		sb.append(" | Ganhos/Cap: ").append(points.getEarned()).append(" / ").append(cap);
+		sb.append("</font></td>");
+		sb.append("</tr>");
+		sb.append("</table>");
+		return sb.toString();
 	}
 
 	private String buildTrees(Player player, PlayerClass playerClass, Collection<SkillLearn> skills, Map<Integer, Integer> learned)
