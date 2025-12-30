@@ -32,6 +32,7 @@ import org.l2jmobius.gameserver.config.RatesConfig;
 import org.l2jmobius.gameserver.data.sql.CharInfoTable;
 import org.l2jmobius.gameserver.data.xml.ExperienceData;
 import org.l2jmobius.gameserver.data.xml.FishingData;
+import org.l2jmobius.gameserver.managers.FourthClassSkillTreeManager;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.Summon;
 import org.l2jmobius.gameserver.model.actor.holders.player.SubClassHolder;
@@ -446,6 +447,7 @@ public class PlayerStat extends PlayableStat
 	@Override
 	public void setLevel(int value)
 	{
+		final int oldLevel = getLevel();
 		int level = value;
 		if (level > (ExperienceData.getInstance().getMaxLevel() - 1))
 		{
@@ -462,6 +464,11 @@ public class PlayerStat extends PlayableStat
 		else
 		{
 			super.setLevel(level);
+		}
+
+		if ((level > oldLevel) && player.hasEnteredWorld())
+		{
+			FourthClassSkillTreeManager.getInstance().handleLevelUp(player, oldLevel, level);
 		}
 		
 		// Removed used by new Clan system.
