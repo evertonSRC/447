@@ -180,9 +180,10 @@ public class FourthClassSkillTreeManager
 
 	public FourthClassPoints getPointsSummary(Player player, boolean dual)
 	{
-		final PointsState points = getPointsState(player, dual);
-		final int remainingPoints = Math.max(0, points.getEarned() - points.getUsed());
-		return new FourthClassPoints(points.getUsed(), remainingPoints, points.getEarned());
+		final int classId = getClassIdForPoints(player, dual);
+		final PlayerClass playerClass = PlayerClass.getPlayerClass(classId);
+		final Map<Integer, Integer> learned = playerClass != null ? getLearnedSkills(player.getObjectId(), classId) : Collections.emptyMap();
+		return getPointsSummary(player, dual, playerClass, learned);
 	}
 
 	public void handleLevelUp(Player player, int oldLevel, int newLevel)
@@ -321,17 +322,6 @@ public class FourthClassSkillTreeManager
 			return LearnResult.fail(validation.getMessage());
 		}
 
-		final int pointsCost = getSkillPointsCost(entry);
-		if (pointsCost > 0)
-		{
-			final FourthClassPoints points = getPointsSummary(player, dual);
-			if (points.getAvailable() < pointsCost)
-			{
-				LOGGER.fine(() -> getClass().getSimpleName() + ": " + player.getName() + " lacks fourth class points for skill " + skillId + " lvl " + skillLevel + " (" + points.getAvailable() + "/" + points.getEarned() + ").");
-				return LearnResult.fail("Você não tem pontos suficientes. Restantes: " + points.getAvailable() + " / Total: " + points.getEarned());
-			}
-		}
-
 		if (!consumeItems(player, validation.getItemsToConsume()))
 		{
 			return LearnResult.fail("Falha ao consumir os itens necessários.");
@@ -351,19 +341,20 @@ public class FourthClassSkillTreeManager
 			refundItems(player, validation.getItemsToConsume());
 			return LearnResult.fail("Não foi possível salvar a skill.");
 		}
-		
-		if (pointsCost > 0)
+
+		final PointsState points = getPointsState(player, dual);
+		learned.put(skillId, skillLevel);
+		final int updatedUsed = calculateUsedPoints(playerClass, learned);
+		if (!savePoints(player, dual, updatedUsed, points.getEarned(), points.getLastLevelAwarded()))
 		{
-			final PointsState points = getPointsState(player, dual);
-			final int updatedUsed = points.getUsed() + pointsCost;
-			if (!savePoints(player, dual, updatedUsed, points.getEarned(), points.getLastLevelAwarded()))
-			{
-				player.removeSkill(skill, false, true);
-				refundItems(player, validation.getItemsToConsume());
-				deleteSkill(player, classId, skillId, skillLevel);
-				return LearnResult.fail("Não foi possível salvar os pontos da fourth class.");
-			}
-			LOGGER.fine(() -> getClass().getSimpleName() + ": " + player.getName() + " spent " + pointsCost + " fourth class points (" + updatedUsed + "/" + points.getEarned() + ") for skill " + skillId + " lvl " + skillLevel + (dual ? " [dual]" : " [main]") + ".");
+			player.removeSkill(skill, false, true);
+			refundItems(player, validation.getItemsToConsume());
+			deleteSkill(player, classId, skillId, skillLevel);
+			return LearnResult.fail("Não foi possível salvar os pontos da fourth class.");
+		}
+		if (updatedUsed > points.getUsed())
+		{
+			LOGGER.fine(() -> getClass().getSimpleName() + ": " + player.getName() + " spent " + (updatedUsed - points.getUsed()) + " fourth class points (" + updatedUsed + "/" + points.getEarned() + ") for skill " + skillId + " lvl " + skillLevel + (dual ? " [dual]" : " [main]") + ".");
 		}
 
 		player.sendSkillList();
@@ -578,6 +569,52 @@ public class FourthClassSkillTreeManager
 		return Math.max(0, entry.getPointsRequired());
 	}
 
+	private int calculateUsedPoints(PlayerClass playerClass, Map<Integer, Integer> learned)
+	{
+		if ((playerClass == null) || learned.isEmpty())
+		{
+			return 0;
+		}
+
+		int usedPoints = 0;
+		for (Map.Entry<Integer, Integer> entry : learned.entrySet())
+		{
+			final int skillId = entry.getKey();
+			final int skillLevel = entry.getValue();
+			for (int level = 1; level <= skillLevel; level++)
+			{
+				final SkillLearn learn = SkillTreeData.getInstance().getFourthClassSkill(playerClass, skillId, level);
+				if (learn == null)
+				{
+					continue;
+				}
+				usedPoints += getSkillPointsCost(learn);
+			}
+		}
+
+		return usedPoints;
+	}
+
+	private FourthClassPoints getPointsSummary(Player player, boolean dual, PlayerClass playerClass, Map<Integer, Integer> learned)
+	{
+		final PointsState points = getPointsState(player, dual);
+		final int used = calculateUsedPoints(playerClass, learned);
+		final int remainingPoints = Math.max(0, points.getEarned() - used);
+		return new FourthClassPoints(used, remainingPoints, points.getEarned());
+	}
+
+	private int getClassIdForPoints(Player player, boolean dual)
+	{
+		if (dual)
+		{
+			final SubClassHolder dualClass = player.getDualClass();
+			return dualClass != null ? dualClass.getId() : player.getActiveClass();
+		}
+
+		final int baseClass = player.getBaseClass();
+		return baseClass > 0 ? baseClass : player.getActiveClass();
+	}
+
 	private LearnValidation validateLearn(Player player, PlayerClass playerClass, SkillLearn entry, Map<Integer, Integer> learned, boolean checkItems)
 	{
 		final int skillId = entry.getSkillId();
@@ -610,7 +647,7 @@ public class FourthClassSkillTreeManager
 		if (pointsCost > 0)
 		{
 			final boolean dual = player.isDualClassActive();
-			final FourthClassPoints points = getPointsSummary(player, dual);
+			final FourthClassPoints points = getPointsSummary(player, dual, playerClass, learned);
 			if (points.getAvailable() < pointsCost)
 			{
 				LOGGER.fine(() -> getClass().getSimpleName() + ": " + player.getName() + " lacks fourth class points for skill " + skillId + " lvl " + skillLevel + " (" + points.getAvailable() + "/" + points.getEarned() + ").");
