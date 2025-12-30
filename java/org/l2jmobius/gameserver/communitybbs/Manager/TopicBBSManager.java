@@ -33,6 +33,7 @@ import org.l2jmobius.gameserver.communitybbs.BB.Post;
 import org.l2jmobius.gameserver.communitybbs.BB.Topic;
 import org.l2jmobius.gameserver.data.sql.ClanTable;
 import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
+import org.l2jmobius.gameserver.managers.FourthClassSkillTreeManager;
 import org.l2jmobius.gameserver.model.actor.Player;
 
 public class TopicBBSManager extends BaseBBSManager
@@ -243,6 +244,12 @@ public class TopicBBSManager extends BaseBBSManager
 		forum.vload();
 		final StringBuilder html = new StringBuilder(2000);
 		html.append("<html><body><br><br><table border=0 width=610><tr><td width=10></td><td width=600 align=left><a action=\"bypass _bbshome\">HOME</a>&nbsp;>&nbsp;<a action=\"bypass _bbsmemo\">Memo Form</a></td></tr></table><img src=\"L2UI.squareblank\" width=\"1\" height=\"10\"><center><table border=0 cellspacing=0 cellpadding=2 bgcolor=888888 width=610><tr><td FIXWIDTH=5></td><td FIXWIDTH=415 align=center>&$413;</td><td FIXWIDTH=120 align=center></td><td FIXWIDTH=70 align=center>&$418;</td></tr></table>");
+		final FourthClassSkillTreeManager.FourthClassPoints mainPoints = FourthClassSkillTreeManager.getInstance().getPointsSummary(player, false);
+		final FourthClassSkillTreeManager.FourthClassPoints dualPoints = FourthClassSkillTreeManager.getInstance().getPointsSummary(player, true);
+		html.append("<table border=0 cellspacing=0 cellpadding=3 width=610 bgcolor=333333>");
+		html.append("<tr><td><font color=\"LEVEL\">Pontos Fourth Class (MAIN): Usados ").append(mainPoints.getUsed()).append(" / Restantes ").append(mainPoints.getRemaining()).append(" / Total ").append(mainPoints.getTotal()).append("</font></td></tr>");
+		html.append("<tr><td><font color=\"LEVEL\">Pontos Fourth Class (DUAL): Usados ").append(dualPoints.getUsed()).append(" / Restantes ").append(dualPoints.getRemaining()).append(" / Total ").append(dualPoints.getTotal()).append("</font></td></tr>");
+		html.append("</table><img src=\"L2UI.squaregray\" width=\"610\" height=\"1\">");
 		final DateFormat dateFormat = DateFormat.getInstance();
 		for (int i = 0, j = getMaxID(forum) + 1; i < (12 * index); j--)
 		{

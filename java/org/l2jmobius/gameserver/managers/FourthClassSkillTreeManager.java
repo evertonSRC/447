@@ -31,6 +31,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.data.enums.CategoryType;
 import org.l2jmobius.gameserver.data.xml.CategoryData;
 import org.l2jmobius.gameserver.data.xml.SkillData;
@@ -51,6 +52,9 @@ public class FourthClassSkillTreeManager
 	private static final Logger LOGGER = Logger.getLogger(FourthClassSkillTreeManager.class.getName());
 	private static final String LOAD_SKILLS = "SELECT skill_id, skill_level FROM player_fourthclass_skills WHERE player_id=? AND class_id=?";
 	private static final String SAVE_SKILL = "INSERT INTO player_fourthclass_skills (player_id, class_id, skill_id, skill_level, acquired_time) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE skill_level=VALUES(skill_level), acquired_time=VALUES(acquired_time)";
+	private static final String DELETE_SKILL = "DELETE FROM player_fourthclass_skills WHERE player_id=? AND class_id=? AND skill_id=? AND skill_level=?";
+	private static final String LOAD_POINTS = "SELECT used_points, total_points FROM player_fourthclass_points WHERE player_id=? AND is_dual=?";
+	private static final String SAVE_POINTS = "INSERT INTO player_fourthclass_points (player_id, is_dual, used_points, total_points, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE used_points=VALUES(used_points), total_points=VALUES(total_points), updated_at=CURRENT_TIMESTAMP";
 
 	private final Set<Integer> _allSkillIds = ConcurrentHashMap.newKeySet();
 
@@ -166,6 +170,20 @@ public class FourthClassSkillTreeManager
 		}
 	}
 
+	public void loadPoints(Player player)
+	{
+		loadPoints(player, false);
+		loadPoints(player, true);
+	}
+
+	public FourthClassPoints getPointsSummary(Player player, boolean dual)
+	{
+		final int usedPoints = getUsedPoints(player, dual);
+		final int totalPoints = getTotalPoints();
+		final int remainingPoints = Math.max(0, totalPoints - usedPoints);
+		return new FourthClassPoints(usedPoints, remainingPoints, totalPoints);
+	}
+
 	public void removeAllFourthClassSkillsFromPlayer(Player player)
 	{
 		if (_allSkillIds.isEmpty())
@@ -226,6 +244,21 @@ public class FourthClassSkillTreeManager
 			refundItems(player, validation.getItemsToConsume());
 			return LearnResult.fail("Não foi possível salvar a skill.");
 		}
+		
+		final int pointsCost = getSkillPointsCost(entry);
+		if (pointsCost > 0)
+		{
+			final boolean dual = player.isDualClassActive();
+			final int usedPoints = getUsedPoints(player, dual);
+			final int updatedPoints = usedPoints + pointsCost;
+			if (!savePoints(player, dual, updatedPoints))
+			{
+				player.removeSkill(skill, false, true);
+				refundItems(player, validation.getItemsToConsume());
+				deleteSkill(player, classId, skillId, skillLevel);
+				return LearnResult.fail("Não foi possível salvar os pontos da fourth class.");
+			}
+		}
 
 		player.sendSkillList();
 		return LearnResult.success("Skill aprendida com sucesso.");
@@ -254,6 +287,104 @@ public class FourthClassSkillTreeManager
 			LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Could not save learned skill for player " + player.getName(), e);
 			return false;
 		}
+	}
+
+	private boolean deleteSkill(Player player, int classId, int skillId, int skillLevel)
+	{
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(DELETE_SKILL))
+		{
+			statement.setInt(1, player.getObjectId());
+			statement.setInt(2, classId);
+			statement.setInt(3, skillId);
+			statement.setInt(4, skillLevel);
+			statement.execute();
+			return true;
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Could not delete learned skill for player " + player.getName(), e);
+			return false;
+		}
+	}
+
+	private int getUsedPoints(Player player, boolean dual)
+	{
+		if (player.hasFourthClassPointsLoaded(dual))
+		{
+			return player.getFourthClassUsedPoints(dual);
+		}
+
+		return loadPoints(player, dual);
+	}
+
+	private int loadPoints(Player player, boolean dual)
+	{
+		int usedPoints = 0;
+		int storedTotal = 0;
+		boolean found = false;
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(LOAD_POINTS))
+		{
+			statement.setInt(1, player.getObjectId());
+			statement.setBoolean(2, dual);
+			try (ResultSet rset = statement.executeQuery())
+			{
+				if (rset.next())
+				{
+					found = true;
+					usedPoints = rset.getInt("used_points");
+					storedTotal = rset.getInt("total_points");
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Could not load fourth class points for player " + player.getName(), e);
+		}
+
+		final int totalPoints = getTotalPoints();
+		if (!found)
+		{
+			savePoints(player, dual, usedPoints);
+		}
+		else if (storedTotal != totalPoints)
+		{
+			savePoints(player, dual, usedPoints);
+		}
+
+		player.setFourthClassUsedPoints(dual, usedPoints);
+		return usedPoints;
+	}
+
+	private boolean savePoints(Player player, boolean dual, int usedPoints)
+	{
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(SAVE_POINTS))
+		{
+			statement.setInt(1, player.getObjectId());
+			statement.setBoolean(2, dual);
+			statement.setInt(3, usedPoints);
+			statement.setInt(4, getTotalPoints());
+			statement.execute();
+			player.setFourthClassUsedPoints(dual, usedPoints);
+			return true;
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Could not save fourth class points for player " + player.getName(), e);
+			return false;
+		}
+	}
+
+	private int getTotalPoints()
+	{
+		return Math.max(0, PlayerConfig.FOURTH_CLASS_SKILLTREE_TOTAL_POINTS);
+	}
+
+	private int getSkillPointsCost(SkillLearn entry)
+	{
+		return Math.max(0, entry.getPointsRequired());
 	}
 
 	private LearnValidation validateLearn(Player player, PlayerClass playerClass, SkillLearn entry, Map<Integer, Integer> learned, boolean checkItems)
@@ -291,6 +422,18 @@ public class FourthClassSkillTreeManager
 			if (points < pointsRequired)
 			{
 				return LearnValidation.fail("Você precisa de " + pointsRequired + " pontos nesta árvore.");
+			}
+		}
+
+		final int pointsCost = getSkillPointsCost(entry);
+		if (pointsCost > 0)
+		{
+			final boolean dual = player.isDualClassActive();
+			final FourthClassPoints points = getPointsSummary(player, dual);
+			if ((points.getUsed() + pointsCost) > points.getTotal())
+			{
+				LOGGER.fine(() -> getClass().getSimpleName() + ": " + player.getName() + " lacks fourth class points for skill " + skillId + " lvl " + skillLevel + " (" + points.getRemaining() + "/" + points.getTotal() + ").");
+				return LearnValidation.fail("Você não tem pontos suficientes. Restantes: " + points.getRemaining() + " / Total: " + points.getTotal());
 			}
 		}
 
@@ -415,6 +558,35 @@ public class FourthClassSkillTreeManager
 	public static FourthClassSkillTreeManager getInstance()
 	{
 		return SingletonHolder.INSTANCE;
+	}
+
+	public static class FourthClassPoints
+	{
+		private final int _used;
+		private final int _remaining;
+		private final int _total;
+
+		private FourthClassPoints(int used, int remaining, int total)
+		{
+			_used = used;
+			_remaining = remaining;
+			_total = total;
+		}
+
+		public int getUsed()
+		{
+			return _used;
+		}
+
+		public int getRemaining()
+		{
+			return _remaining;
+		}
+
+		public int getTotal()
+		{
+			return _total;
+		}
 	}
 
 	public static class LearnResult
