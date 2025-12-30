@@ -53,8 +53,8 @@ public class FourthClassSkillTreeManager
 	private static final String LOAD_SKILLS = "SELECT skill_id, skill_level FROM player_fourthclass_skills WHERE player_id=? AND class_id=?";
 	private static final String SAVE_SKILL = "INSERT INTO player_fourthclass_skills (player_id, class_id, skill_id, skill_level, acquired_time) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE skill_level=VALUES(skill_level), acquired_time=VALUES(acquired_time)";
 	private static final String DELETE_SKILL = "DELETE FROM player_fourthclass_skills WHERE player_id=? AND class_id=? AND skill_id=? AND skill_level=?";
-	private static final String LOAD_POINTS = "SELECT used_points, total_points FROM player_fourthclass_points WHERE player_id=? AND is_dual=?";
-	private static final String SAVE_POINTS = "INSERT INTO player_fourthclass_points (player_id, is_dual, used_points, total_points, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE used_points=VALUES(used_points), total_points=VALUES(total_points), updated_at=CURRENT_TIMESTAMP";
+	private static final String LOAD_POINTS = "SELECT usedPoints, totalPoints FROM character_fourthclass_points WHERE charId=? AND isDual=?";
+	private static final String SAVE_POINTS = "INSERT INTO character_fourthclass_points (charId, isDual, usedPoints, totalPoints, updatedAt) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE usedPoints=VALUES(usedPoints), totalPoints=VALUES(totalPoints), updatedAt=CURRENT_TIMESTAMP";
 
 	private final Set<Integer> _allSkillIds = ConcurrentHashMap.newKeySet();
 
@@ -333,8 +333,8 @@ public class FourthClassSkillTreeManager
 				if (rset.next())
 				{
 					found = true;
-					usedPoints = rset.getInt("used_points");
-					storedTotal = rset.getInt("total_points");
+					usedPoints = rset.getInt("usedPoints");
+					storedTotal = rset.getInt("totalPoints");
 				}
 			}
 		}
