@@ -260,24 +260,30 @@ public class MemoBoard implements IWriteBoardHandler
 
 		if (maxed)
 		{
+			sb.append("<table border=0 cellspacing=0 cellpadding=0><tr><td>");
 			sb.append("<font color=\"00AA00\">Aprendida</font>");
 		}
 		else if (cell.canLearn())
 		{
-			sb.append("<button value=\"Aprender\" action=\"bypass -h _bbsmemo;learn;").append(cell.getSkillId()).append(";").append(learn.getSkillLevel()).append("\" back=\"l2ui_ch3.smallbutton2_down\" fore=\"l2ui_ch3.smallbutton2\" width=80 height=20>");
+			sb.append("<table border=0 cellspacing=0 cellpadding=0><tr><td>");
+			sb.append("<button value=\"Aprender\" action=\"bypass -h _bbsmemo;learn;")
+				.append(cell.getSkillId())
+				.append(";")
+				.append(learn.getSkillLevel())
+				.append("\" back=\"l2ui_ch3.smallbutton2_down\" fore=\"l2ui_ch3.smallbutton2\" width=80 height=20></button>");
 		}
 		else
 		{
+			sb.append("<table border=0 cellspacing=0 cellpadding=0><tr><td>");
 			sb.append("<font color=\"FF6A00\">Bloqueada</font>");
 		}
 
 		final String tooltipText = learn.getTooltipText();
-		if (!tooltipText.isEmpty())
-		{
-			sb.append(" <button value=\"\" width=16 height=16 back=\"icon.etc_question_mark_i00\" fore=\"icon.etc_question_mark_i00\" tooltip=\"")
-				.append(escapeHtml(tooltipText))
-				.append("\"></button>");
-		}
+		sb.append("</td><td width=4></td><td>");
+		sb.append("<button value=\"\" width=16 height=16 back=\"icon.etc_question_mark_i00\" fore=\"icon.etc_question_mark_i00\" tooltip=\"")
+			.append(escapeHtml(tooltipText))
+			.append("\"></button>");
+		sb.append("</td></tr></table>");
 
 		return sb.toString();
 	}
