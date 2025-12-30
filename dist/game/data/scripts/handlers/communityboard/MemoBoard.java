@@ -246,9 +246,9 @@ public class MemoBoard implements IWriteBoardHandler
 		final String tooltipText = learn.getTooltipText();
 		if (!tooltipText.isEmpty())
 		{
-			sb.append(" <button width=16 height=16 back=\"icon.etc_question_mark_i00\" fore=\"icon.etc_question_mark_i00\" tooltip=\"")
+			sb.append(" <button value=\"\" width=16 height=16 back=\"icon.etc_question_mark_i00\" fore=\"icon.etc_question_mark_i00\" tooltip=\"")
 				.append(escapeHtml(tooltipText))
-				.append("\">");
+				.append("\"></button>");
 		}
 		sb.append("<br1>");
 		sb.append("Lv ").append(Math.min(cell.getCurrentLevel(), cell.getMaxLevel())).append("/").append(cell.getMaxLevel()).append("<br1>");
