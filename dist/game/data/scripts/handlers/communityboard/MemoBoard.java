@@ -138,7 +138,7 @@ public class MemoBoard implements IWriteBoardHandler
 
 	private String buildPointsLine(FourthClassPoints points, int cap)
 	{
-		return "Pontos: Disp " + points.getAvailable() + " | Usados " + points.getUsed() + " | Total " + points.getEarned() + " / " + cap;
+		return "Pontos disponíveis: " + points.getAvailable() + " | Pontos usados: " + points.getUsed() + " | Total ganhos/cap: " + points.getEarned() + " / " + cap;
 	}
 
 	private String buildTrees(Player player, PlayerClass playerClass, Collection<SkillLearn> skills, Map<Integer, Integer> learned)
