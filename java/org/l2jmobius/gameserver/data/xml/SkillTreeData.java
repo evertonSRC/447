@@ -106,6 +106,7 @@ public class SkillTreeData implements IXmlReader
 	private static final Map<Long, SkillLearn> _abilitySkillTree = new ConcurrentHashMap<>();
 	private static final Map<Long, SkillLearn> _alchemySkillTree = new ConcurrentHashMap<>();
 	private static final Map<Long, SkillLearn> _dualClassSkillTree = new ConcurrentHashMap<>();
+	private static final Map<PlayerClass, Map<Long, SkillLearn>> _fourthClassSkillTrees = new ConcurrentHashMap<>();
 	
 	// Other skill trees
 	private static final Map<Long, SkillLearn> _nobleSkillTree = new ConcurrentHashMap<>();
@@ -153,6 +154,7 @@ public class SkillTreeData implements IXmlReader
 		_heroSkillTree.clear();
 		_gameMasterSkillTree.clear();
 		_gameMasterAuraSkillTree.clear();
+		_fourthClassSkillTrees.clear();
 		_raceSkillTree.clear();
 		_revelationSkillTree.clear();
 		_dualClassSkillTree.clear();
@@ -293,7 +295,11 @@ public class SkillTreeData implements IXmlReader
 								final SkillLearn skillLearn = new SkillLearn(learnSkillSet);
 								
 								// test if skill exists
-								SkillData.getInstance().getSkill(skillLearn.getSkillId(), skillLearn.getSkillLevel());
+								if (SkillData.getInstance().getSkill(skillLearn.getSkillId(), skillLearn.getSkillLevel()) == null)
+								{
+									LOGGER.warning(getClass().getSimpleName() + ": Invalid skill " + skillLearn.getSkillId() + " lvl " + skillLearn.getSkillLevel() + " in " + file.getPath());
+									continue;
+								}
 								for (Node b = c.getFirstChild(); b != null; b = b.getNextSibling())
 								{
 									attrs = b.getAttributes();
@@ -437,6 +443,18 @@ public class SkillTreeData implements IXmlReader
 									case "dualClassSkillTree":
 									{
 										_dualClassSkillTree.put(skillHashCode, skillLearn);
+										break;
+									}
+									case "fourthClassSkillTree":
+									{
+										if (playerClass != null)
+										{
+											_fourthClassSkillTrees.computeIfAbsent(playerClass, _ -> new HashMap<>()).put(skillHashCode, skillLearn);
+										}
+										else
+										{
+											LOGGER.warning(getClass().getSimpleName() + ": Missing classId for fourth class skill tree in " + file.getPath());
+										}
 										break;
 									}
 									case "awakeningSaveSkillTree":
@@ -610,6 +628,25 @@ public class SkillTreeData implements IXmlReader
 	public Map<Long, SkillLearn> getAlchemySkillTree()
 	{
 		return _alchemySkillTree;
+	}
+
+	/**
+	 * Gets the fourth class skill tree for a class.
+	 * @param playerClass the player class
+	 * @return the fourth class skill tree for {@code playerClass}
+	 */
+	public Map<Long, SkillLearn> getFourthClassSkillTree(PlayerClass playerClass)
+	{
+		return _fourthClassSkillTrees.getOrDefault(playerClass, Collections.emptyMap());
+	}
+
+	/**
+	 * Gets the fourth class skill tree map.
+	 * @return the fourth class skill tree map
+	 */
+	public Map<PlayerClass, Map<Long, SkillLearn>> getFourthClassSkillTrees()
+	{
+		return _fourthClassSkillTrees;
 	}
 	
 	/**
@@ -1491,6 +1528,24 @@ public class SkillTreeData implements IXmlReader
 	{
 		return _abilitySkillTree.get(SkillData.getSkillHashCode(id, lvl));
 	}
+
+	/**
+	 * Gets the fourth class skill tree skill for a given class.
+	 * @param playerClass the player class
+	 * @param id the skill id
+	 * @param lvl the skill level
+	 * @return the fourth class skill or {@code null}
+	 */
+	public SkillLearn getFourthClassSkill(PlayerClass playerClass, int id, int lvl)
+	{
+		final Map<Long, SkillLearn> tree = getFourthClassSkillTree(playerClass);
+		if (tree.isEmpty())
+		{
+			return null;
+		}
+
+		return tree.get(SkillData.getSkillHashCode(id, lvl));
+	}
 	
 	/**
 	 * Gets the alchemy skill.
@@ -2138,6 +2193,7 @@ public class SkillTreeData implements IXmlReader
 		LOGGER.info(className + ": Loaded " + _gameMasterAuraSkillTree.size() + " game master aura skills.");
 		LOGGER.info(className + ": Loaded " + _abilitySkillTree.size() + " ability skills.");
 		LOGGER.info(className + ": Loaded " + _alchemySkillTree.size() + " alchemy skills.");
+		LOGGER.info(className + ": Loaded " + _fourthClassSkillTrees.size() + " fourth class skill trees.");
 		LOGGER.info(className + ": Loaded " + _awakeningSaveSkillTree.size() + " class awaken save skills.");
 		LOGGER.info(className + ": Loaded " + revelationSkillTreeCount + " Revelation skills.");
 		

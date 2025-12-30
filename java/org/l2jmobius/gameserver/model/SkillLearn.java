@@ -73,7 +73,7 @@ public class SkillLearn
 		_learnedByFS = set.getBoolean("learnedByFS", false);
 		_treeId = set.getInt("treeId", 0);
 		_row = set.getInt("row", 0);
-		_column = set.getInt("row", 0);
+		_column = set.getInt("column", 0);
 		_pointsRequired = set.getInt("pointsRequired", 0);
 	}
 	
