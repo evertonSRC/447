@@ -243,13 +243,6 @@ public class MemoBoard implements IWriteBoardHandler
 		final boolean maxed = cell.getCurrentLevel() >= cell.getMaxLevel();
 		final String color = maxed ? "00AA00" : (cell.canLearn() ? "FFFFFF" : "999999");
 		sb.append("<font color=\"").append(color).append("\">").append(name).append("</font>");
-		final String tooltipText = learn.getTooltipText();
-		if (!tooltipText.isEmpty())
-		{
-			sb.append(" <button width=16 height=16 back=\"icon.etc_question_mark_i00\" fore=\"icon.etc_question_mark_i00\" tooltip=\"")
-				.append(escapeHtml(tooltipText))
-				.append("\">");
-		}
 		sb.append("<br1>");
 		sb.append("Lv ").append(Math.min(cell.getCurrentLevel(), cell.getMaxLevel())).append("/").append(cell.getMaxLevel()).append("<br1>");
 		sb.append("Req Lv: ").append(learn.getGetLevel()).append("<br1>");
@@ -276,6 +269,14 @@ public class MemoBoard implements IWriteBoardHandler
 		else
 		{
 			sb.append("<font color=\"FF6A00\">Bloqueada</font>");
+		}
+
+		final String tooltipText = learn.getTooltipText();
+		if (!tooltipText.isEmpty())
+		{
+			sb.append(" <button value=\"\" width=16 height=16 back=\"icon.etc_question_mark_i00\" fore=\"icon.etc_question_mark_i00\" tooltip=\"")
+				.append(escapeHtml(tooltipText))
+				.append("\"></button>");
 		}
 
 		return sb.toString();
