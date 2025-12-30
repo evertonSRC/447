@@ -886,6 +886,9 @@ public class Player extends Playable
 	
 	private Forum _forumMail;
 	private Forum _forumMemo;
+
+	private int _fourthClassUsedPointsMain = -1;
+	private int _fourthClassUsedPointsDual = -1;
 	
 	/** Skills queued because a skill is already in progress */
 	private SkillUseHolder _queuedSkill;
@@ -7664,6 +7667,7 @@ public class Player extends Playable
 			// Note that Clan, Noblesse and Hero skills are given separately and not here.
 			// Retrieve from the database all skills of this Player and add them to _skills
 			player.restoreCharData();
+			FourthClassSkillTreeManager.getInstance().loadPoints(player);
 			
 			// Reward auto-get skills and all available skills if auto-learn skills is true.
 			player.rewardSkills();
@@ -15575,6 +15579,28 @@ public class Player extends Playable
 	public int getRemainingBaseAttributePoints()
 	{
 		return Math.max(0, getAvailableBaseAttributePoints() - getBaseAttributePointsUsed());
+	}
+
+	public boolean hasFourthClassPointsLoaded(boolean dual)
+	{
+		return (dual ? _fourthClassUsedPointsDual : _fourthClassUsedPointsMain) >= 0;
+	}
+
+	public int getFourthClassUsedPoints(boolean dual)
+	{
+		return dual ? _fourthClassUsedPointsDual : _fourthClassUsedPointsMain;
+	}
+
+	public void setFourthClassUsedPoints(boolean dual, int points)
+	{
+		if (dual)
+		{
+			_fourthClassUsedPointsDual = points;
+		}
+		else
+		{
+			_fourthClassUsedPointsMain = points;
+		}
 	}
 	
 	/**
