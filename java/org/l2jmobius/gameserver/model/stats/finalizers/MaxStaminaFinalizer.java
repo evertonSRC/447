@@ -23,7 +23,6 @@ import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.model.stats.BaseStat;
 import org.l2jmobius.gameserver.model.stats.IStatFunction;
 import org.l2jmobius.gameserver.model.stats.Stat;
 
@@ -46,9 +45,6 @@ public class MaxStaminaFinalizer implements IStatFunction
 				baseValue = PlayerConfig.BASE_STAMINA + (PlayerConfig.STAMINA_PER_LEVEL * player.getLevel());
 			}
 		}
-		
-		final double conBonus = creature.getCON() > 0 ? BaseStat.CON.calcBonus(creature) : 1;
-		baseValue *= conBonus;
 		
 		return defaultValue(creature, stat, baseValue);
 	}
