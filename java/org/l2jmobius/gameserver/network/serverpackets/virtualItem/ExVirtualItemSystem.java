@@ -41,6 +41,8 @@ import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
  */
 public class ExVirtualItemSystem extends ServerPacket
 {
+	private static final int PERMANENT_EVENT_REMAINING_SECONDS = Integer.MAX_VALUE;
+
 	private final Player _player;
 	private final int _type;
 	private final int _selectIndexMain;
@@ -74,7 +76,7 @@ public class ExVirtualItemSystem extends ServerPacket
 		{
 			buffer.writeByte(_type); // var int cType;
 			buffer.writeByte(true); // var int cResult;
-			buffer.writeInt(IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DURATION * 2592000); // Event ending time (2592000 = 30 days in milis)
+			buffer.writeInt(PERMANENT_EVENT_REMAINING_SECONDS); // Event is permanent while enabled.
 			buffer.writeInt(illusoryPointsAcquired); // var int nTotalGetVISPoint;
 			buffer.writeInt(illusoryPointsUsed); // var int nTotalUsedVISPoint;
 			buffer.writeInt(_selectIndexMain); // var int nSelectIndexMain;
@@ -115,7 +117,7 @@ public class ExVirtualItemSystem extends ServerPacket
 			_player.getVariables().set(PlayerVariables.ILLUSORY_POINTS_USED, 0); // Total Illusory Points used
 			buffer.writeByte(_type); // var int cType;
 			buffer.writeByte(true); // var int cResult;
-			buffer.writeInt(IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DURATION * 2592000); // Event ending time (2592000 = 30 days in milis)
+			buffer.writeInt(PERMANENT_EVENT_REMAINING_SECONDS); // Event is permanent while enabled.
 			buffer.writeInt(illusoryPointsAcquired); // var int nTotalGetVISPoint;
 			buffer.writeInt(illusoryPointsUsed); // var int nTotalUsedVISPoint;
 			buffer.writeInt(IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT); // max available points default 600
@@ -133,7 +135,7 @@ public class ExVirtualItemSystem extends ServerPacket
 		{
 			buffer.writeByte(_type); // var int cType;
 			buffer.writeByte(true); // var int cResult;
-			buffer.writeInt(IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DURATION * 2592000); // Event ending time (2592000 = 30 days in milis)
+			buffer.writeInt(PERMANENT_EVENT_REMAINING_SECONDS); // Event is permanent while enabled.
 			buffer.writeInt(illusoryPointsAcquired); // var int nTotalGetVISPoint;
 			buffer.writeInt(illusoryPointsUsed); // var int nTotalUsedVISPoint;
 			buffer.writeInt(_selectIndexMain); // var int nSelectIndexMain;
