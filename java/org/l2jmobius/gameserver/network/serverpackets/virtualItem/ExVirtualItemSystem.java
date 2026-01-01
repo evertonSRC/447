@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.l2jmobius.commons.network.WritableBuffer;
 import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
-import org.l2jmobius.gameserver.data.holders.VirtualItemHolder;
+import org.l2jmobius.gameserver.data.holders.VirtualItemEntry;
 import org.l2jmobius.gameserver.data.xml.SkillData;
 import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.model.actor.Player;
@@ -46,9 +46,9 @@ public class ExVirtualItemSystem extends ServerPacket
 	private final int _selectIndexMain;
 	private final int _selectIndexSub;
 	private final long _selectSlot;
-	private final List<VirtualItemHolder> _updateVisItemInfo;
+	private final List<VirtualItemEntry> _updateVisItemInfo;
 	
-	public ExVirtualItemSystem(Player player, int type, int selectIndexMain, int selectIndexSub, long selectSlot, List<VirtualItemHolder> updateVisItemInfo)
+	public ExVirtualItemSystem(Player player, int type, int selectIndexMain, int selectIndexSub, long selectSlot, List<VirtualItemEntry> updateVisItemInfo)
 	{
 		_player = player;
 		_type = type;
@@ -89,25 +89,22 @@ public class ExVirtualItemSystem extends ServerPacket
 			buffer.writeInt(testIndex); // var int nIndexMain;
 			buffer.writeInt(testIndexSub); // var int nIndexSub;
 			buffer.writeInt(testSlot); // var int nSlot;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getCostVISPoint()); // var int _nCostVISPoint;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getItemId()); // var int nItemClass;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getEnchant()); // var int nEnchant;
+			final VirtualItemEntry entry = VirtualItemData.getInstance().getVirtualItemEntry(testIndex, testIndexSub);
+			writeVirtualItemStats(buffer, entry);
 			
 			buffer.writeInt(2); // equipment array size
 			buffer.writeInt(testIndex); // var int nIndexMain;
 			buffer.writeInt(testIndexSub); // var int nIndexSub;
 			buffer.writeInt(2); // var int nSlot;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getCostVISPoint()); // var int _nCostVISPoint;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getItemId()); // var int nItemClass;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getEnchant()); // var int nEnchant;
+			final VirtualItemEntry entry = VirtualItemData.getInstance().getVirtualItemEntry(testIndex, testIndexSub);
+			writeVirtualItemStats(buffer, entry);
 			
 			buffer.writeInt(3); // equipment array size
 			buffer.writeInt(testIndex); // var int nIndexMain;
 			buffer.writeInt(testIndexSub); // var int nIndexSub;
 			buffer.writeInt(3); // var int nSlot;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getCostVISPoint()); // var int _nCostVISPoint;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getItemId()); // var int nItemClass;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getEnchant()); // var int nEnchant;
+			final VirtualItemEntry entry = VirtualItemData.getInstance().getVirtualItemEntry(testIndex, testIndexSub);
+			writeVirtualItemStats(buffer, entry);
 		}
 		else if (_type == 2) // XXX Reset all.
 		{
@@ -124,9 +121,8 @@ public class ExVirtualItemSystem extends ServerPacket
 			buffer.writeInt(testIndex); // var int nIndexMain;
 			buffer.writeInt(testIndexSub); // var int nIndexSub;
 			buffer.writeInt(3); // var int nSlot;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getCostVISPoint()); // var int _nCostVISPoint;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getItemId()); // var int nItemClass;
-			buffer.writeInt(VirtualItemData.getInstance().getVirtualItem(testIndex).getEnchant()); // var int nEnchant;
+			final VirtualItemEntry entry = VirtualItemData.getInstance().getVirtualItemEntry(testIndex, testIndexSub);
+			writeVirtualItemStats(buffer, entry);
 		}
 		
 		else if (_type == 3) // XXX Update virtual items
@@ -139,12 +135,12 @@ public class ExVirtualItemSystem extends ServerPacket
 			buffer.writeInt(_selectIndexMain); // var int nSelectIndexMain;
 			buffer.writeInt(_selectIndexSub); // var int nSelectIndexSub;
 			buffer.writeLong(_selectSlot); // var int nSelectSlot;
-			for (VirtualItemHolder virtualItem : _updateVisItemInfo)
+			for (VirtualItemEntry virtualItem : _updateVisItemInfo)
 			{
 				// Item info
 				buffer.writeInt(virtualItem.getIndexMain()); // var int nIndexMain;
 				buffer.writeInt(virtualItem.getIndexSub()); // var int nIndexSub;
-				buffer.writeLong(virtualItem.getSlot()); // var int nSlot;
+				buffer.writeLong(virtualItem.getSlotIdClient()); // var int nSlot;
 				buffer.writeInt(virtualItem.getCostVISPoint()); // var int nCostVISPoint;
 				buffer.writeInt(virtualItem.getItemId()); // var int nItemClass;
 				buffer.writeInt(virtualItem.getEnchant()); // var int nEnchant;
@@ -171,7 +167,7 @@ public class ExVirtualItemSystem extends ServerPacket
 					}
 					
 					// XXX Skills have always slot 123.
-					if ((virtualItem.getSlot() == 1) || (virtualItem.getSlot() == 2) || (virtualItem.getSlot() == 3))
+					if ((virtualItem.getSlotIdClient() == 1) || (virtualItem.getSlotIdClient() == 2) || (virtualItem.getSlotIdClient() == 3))
 					{
 						// Skill
 						final Skill skill = SkillData.getInstance().getSkill(virtualItem.getItemId(), virtualItem.getEnchant());
@@ -210,5 +206,20 @@ public class ExVirtualItemSystem extends ServerPacket
 		
 		_player.sendPacket(new ExVirtualItemSystemBaseInfo(_player));
 		_player.sendPacket(new ExVirtualItemSystemPointInfo(_player, IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT - _player.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_USED, 0)));
+	}
+	
+	private static void writeVirtualItemStats(WritableBuffer buffer, VirtualItemEntry entry)
+	{
+		if (entry == null)
+		{
+			buffer.writeInt(0); // var int _nCostVISPoint;
+			buffer.writeInt(0); // var int nItemClass;
+			buffer.writeInt(0); // var int nEnchant;
+			return;
+		}
+		
+		buffer.writeInt(entry.getCostVISPoint()); // var int _nCostVISPoint;
+		buffer.writeInt(entry.getItemId()); // var int nItemClass;
+		buffer.writeInt(entry.getEnchant()); // var int nEnchant;
 	}
 }

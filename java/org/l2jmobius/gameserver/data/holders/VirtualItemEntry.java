@@ -21,22 +21,26 @@
 package org.l2jmobius.gameserver.data.holders;
 
 /**
- * @author CostyKiller
+ * @author Mobius
  */
-public class VirtualItemHolder
+public class VirtualItemEntry
 {
 	private final int _indexMain;
-	private final long _slot;
 	private final int _indexSub;
+	private final long _slotIdClient;
+	private final int _virtualSlotId;
+	private final String _slotAlias;
 	private final int _itemId;
 	private final int _enchant;
 	private final int _costVISPoint;
 	
-	public VirtualItemHolder(int indexMain, long slot, int indexSub, int itemId, int enchant, int costVISPoint)
+	public VirtualItemEntry(int indexMain, int indexSub, long slotIdClient, int virtualSlotId, String slotAlias, int itemId, int enchant, int costVISPoint)
 	{
 		_indexMain = indexMain;
-		_slot = slot;
 		_indexSub = indexSub;
+		_slotIdClient = slotIdClient;
+		_virtualSlotId = virtualSlotId;
+		_slotAlias = slotAlias;
 		_itemId = itemId;
 		_enchant = enchant;
 		_costVISPoint = costVISPoint;
@@ -47,14 +51,24 @@ public class VirtualItemHolder
 		return _indexMain;
 	}
 	
-	public long getSlot()
-	{
-		return _slot;
-	}
-	
 	public int getIndexSub()
 	{
 		return _indexSub;
+	}
+	
+	public long getSlotIdClient()
+	{
+		return _slotIdClient;
+	}
+	
+	public int getVirtualSlotId()
+	{
+		return _virtualSlotId;
+	}
+	
+	public String getSlotAlias()
+	{
+		return _slotAlias;
 	}
 	
 	public int getItemId()
