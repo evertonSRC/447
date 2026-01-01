@@ -99,6 +99,7 @@
 
 	<!-- ADMIN DEBUG -->
 	<admin command="debug" description="Open debug menu." accessLevel="100" />
+	<admin command="virtualitem" description="Debug virtual equipment slots." accessLevel="100" />
 
 	<!-- ADMIN DELETE -->
 	<admin command="delete" description="Delete target NPC." accessLevel="100" />

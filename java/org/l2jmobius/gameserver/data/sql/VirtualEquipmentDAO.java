@@ -23,14 +23,14 @@ package org.l2jmobius.gameserver.data.sql;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquipmentHolder;
+import org.l2jmobius.gameserver.model.actor.enums.player.VirtualSlot;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
 
 /**
  * @author Mobius
@@ -44,9 +44,9 @@ public class VirtualEquipmentDAO
 	private static final String DELETE_ALL_QUERY = "DELETE FROM character_virtual_equipment WHERE charId = ?";
 	private static final String UPSERT_QUERY = "REPLACE INTO character_virtual_equipment (charId, slot, itemId, enchant, indexMain, indexSub) VALUES (?, ?, ?, ?, ?, ?)";
 	
-	public Map<Integer, VirtualEquipmentHolder> load(int objectId)
+	public Map<VirtualSlot, VirtualEquippedItem> load(int objectId)
 	{
-		final Map<Integer, VirtualEquipmentHolder> equipment = new HashMap<>();
+		final Map<VirtualSlot, VirtualEquippedItem> equipment = new EnumMap<>(VirtualSlot.class);
 		try (Connection con = DatabaseFactory.getConnection();
 			PreparedStatement statement = con.prepareStatement(SELECT_QUERY))
 		{
@@ -55,8 +55,15 @@ public class VirtualEquipmentDAO
 			{
 				while (rset.next())
 				{
-					final int slot = rset.getInt("slot");
-					equipment.put(slot, new VirtualEquipmentHolder(slot, rset.getInt("itemId"), rset.getInt("enchant"), rset.getInt("indexMain"), rset.getInt("indexSub")));
+					final int slotId = rset.getInt("slot");
+					final VirtualSlot slot = VirtualSlot.fromId(slotId);
+					if (slot == null)
+					{
+						LOGGER.warning(getClass().getSimpleName() + ": Unknown virtual slot id " + slotId + " for: " + objectId);
+						continue;
+					}
+					
+					equipment.put(slot, new VirtualEquippedItem(rset.getInt("itemId"), rset.getInt("enchant"), rset.getInt("indexMain"), rset.getInt("indexSub")));
 				}
 			}
 		}
@@ -68,17 +75,17 @@ public class VirtualEquipmentDAO
 		return equipment;
 	}
 	
-	public void saveSlot(int objectId, VirtualEquipmentHolder holder)
+	public void saveSlot(int objectId, VirtualSlot slot, VirtualEquippedItem item)
 	{
 		try (Connection con = DatabaseFactory.getConnection();
 			PreparedStatement statement = con.prepareStatement(UPSERT_QUERY))
 		{
 			statement.setInt(1, objectId);
-			statement.setInt(2, holder.getSlot());
-			statement.setInt(3, holder.getItemId());
-			statement.setInt(4, holder.getEnchant());
-			statement.setInt(5, holder.getIndexMain());
-			statement.setInt(6, holder.getIndexSub());
+			statement.setInt(2, slot.getId());
+			statement.setInt(3, item.getItemId());
+			statement.setInt(4, item.getEnchant());
+			statement.setInt(5, item.getIndexMain());
+			statement.setInt(6, item.getIndexSub());
 			statement.executeUpdate();
 		}
 		catch (Exception e)
@@ -87,13 +94,13 @@ public class VirtualEquipmentDAO
 		}
 	}
 	
-	public void deleteSlot(int objectId, int slot)
+	public void deleteSlot(int objectId, VirtualSlot slot)
 	{
 		try (Connection con = DatabaseFactory.getConnection();
 			PreparedStatement statement = con.prepareStatement(DELETE_QUERY))
 		{
 			statement.setInt(1, objectId);
-			statement.setInt(2, slot);
+			statement.setInt(2, slot.getId());
 			statement.executeUpdate();
 		}
 		catch (Exception e)
@@ -102,7 +109,7 @@ public class VirtualEquipmentDAO
 		}
 	}
 	
-	public void saveAll(int objectId, Collection<VirtualEquipmentHolder> equipment)
+	public void saveAll(int objectId, Map<VirtualSlot, VirtualEquippedItem> equipment)
 	{
 		try (Connection con = DatabaseFactory.getConnection())
 		{
@@ -119,14 +126,16 @@ public class VirtualEquipmentDAO
 			
 			try (PreparedStatement statement = con.prepareStatement(UPSERT_QUERY))
 			{
-				for (VirtualEquipmentHolder holder : equipment)
+				for (Map.Entry<VirtualSlot, VirtualEquippedItem> entry : equipment.entrySet())
 				{
+					final VirtualSlot slot = entry.getKey();
+					final VirtualEquippedItem item = entry.getValue();
 					statement.setInt(1, objectId);
-					statement.setInt(2, holder.getSlot());
-					statement.setInt(3, holder.getItemId());
-					statement.setInt(4, holder.getEnchant());
-					statement.setInt(5, holder.getIndexMain());
-					statement.setInt(6, holder.getIndexSub());
+					statement.setInt(2, slot.getId());
+					statement.setInt(3, item.getItemId());
+					statement.setInt(4, item.getEnchant());
+					statement.setInt(5, item.getIndexMain());
+					statement.setInt(6, item.getIndexSub());
 					statement.addBatch();
 				}
 				statement.executeBatch();
