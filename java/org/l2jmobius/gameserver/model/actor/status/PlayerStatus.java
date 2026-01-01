@@ -20,6 +20,9 @@
  */
 package org.l2jmobius.gameserver.model.actor.status;
 
+import java.util.concurrent.Future;
+
+import org.l2jmobius.commons.threads.ThreadPool;
 import org.l2jmobius.gameserver.ai.Intention;
 import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.custom.MultilingualSupportConfig;
@@ -48,9 +51,11 @@ import org.l2jmobius.gameserver.util.LocationUtil;
 
 public class PlayerStatus extends PlayableStatus
 {
+	private static final int STAMINA_REGEN_PERIOD_MS = 1000;
+	
 	private double _currentCp = 0; // Current CP of the Player
 	private double _currentStamina = 0; // Current Stamina of the Player
-	private long _lastStaminaRegenTime = 0;
+	private Future<?> _staminaRegenTask;
 	
 	public PlayerStatus(Player player)
 	{
@@ -90,17 +95,19 @@ public class PlayerStatus extends PlayableStatus
 			if (newStamina >= maxStamina)
 			{
 				_currentStamina = maxStamina;
-				_flagsRegenActive &= ~REGEN_FLAG_STAMINA;
-				if (_flagsRegenActive == 0)
-				{
-					stopHpMpRegeneration();
-				}
+				stopStaminaRegeneration();
 			}
 			else
 			{
 				_currentStamina = newStamina;
-				_flagsRegenActive |= REGEN_FLAG_STAMINA;
-				startHpMpRegeneration();
+				if (!player.isDead())
+				{
+					startStaminaRegeneration();
+				}
+				else
+				{
+					stopStaminaRegeneration();
+				}
 			}
 		}
 
@@ -108,6 +115,41 @@ public class PlayerStatus extends PlayableStatus
 		{
 			player.sendStaminaUpdate();
 		}
+	}
+	
+	private synchronized void startStaminaRegeneration()
+	{
+		if (_staminaRegenTask == null)
+		{
+			_staminaRegenTask = ThreadPool.scheduleAtFixedRate(this::doStaminaRegeneration, STAMINA_REGEN_PERIOD_MS, STAMINA_REGEN_PERIOD_MS);
+		}
+	}
+	
+	private synchronized void stopStaminaRegeneration()
+	{
+		if (_staminaRegenTask != null)
+		{
+			_staminaRegenTask.cancel(false);
+			_staminaRegenTask = null;
+		}
+	}
+	
+	private void doStaminaRegeneration()
+	{
+		final Player player = getActiveChar();
+		if (!PlayerConfig.ENABLE_STAMINA || player.isDead())
+		{
+			stopStaminaRegeneration();
+			return;
+		}
+		
+		if (_currentStamina >= player.getMaxStamina())
+		{
+			stopStaminaRegeneration();
+			return;
+		}
+		
+		setCurrentStamina(_currentStamina + 1, true);
 	}
 	
 	@Override
@@ -475,34 +517,6 @@ public class PlayerStatus extends PlayableStatus
 			setCurrentMp(getCurrentMp() + stat.getValue(Stat.REGENERATE_MP_RATE), false);
 		}
 
-		if (PlayerConfig.ENABLE_STAMINA && (_currentStamina < player.getMaxStamina()))
-		{
-			final long now = System.currentTimeMillis();
-			if (_lastStaminaRegenTime == 0)
-			{
-				_lastStaminaRegenTime = now;
-			}
-
-			final boolean canRegenInCombat = PlayerConfig.STAMINA_REGEN_IN_COMBAT || !player.isInCombat();
-			if (canRegenInCombat && !player.isStaminaRegenDelayed())
-			{
-				final double regenAmount = PlayerConfig.STAMINA_REGEN_PER_SECOND * ((now - _lastStaminaRegenTime) / 1000.0);
-				if (regenAmount > 0)
-				{
-					_lastStaminaRegenTime = now;
-					setCurrentStamina(_currentStamina + regenAmount, true);
-				}
-			}
-			else
-			{
-				_lastStaminaRegenTime = now;
-			}
-		}
-		else if (_currentStamina >= player.getMaxStamina())
-		{
-			_lastStaminaRegenTime = 0;
-		}
-		
 		player.broadcastStatusUpdate(); // send the StatusUpdate packet
 	}
 	
