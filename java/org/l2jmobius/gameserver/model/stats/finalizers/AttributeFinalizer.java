@@ -18,9 +18,13 @@ package org.l2jmobius.gameserver.model.stats.finalizers;
 
 import java.util.OptionalDouble;
 
+import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Player;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
 import org.l2jmobius.gameserver.model.actor.enums.creature.AttributeType;
 import org.l2jmobius.gameserver.model.item.enchant.attribute.AttributeHolder;
+import org.l2jmobius.gameserver.model.item.ItemTemplate;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
 import org.l2jmobius.gameserver.model.stats.IStatFunction;
@@ -65,6 +69,25 @@ public class AttributeFinalizer implements IStatFunction
 						baseValue += weaponHolder.getValue();
 					}
 				}
+				
+				if (creature.isPlayer())
+				{
+					final Player player = creature.asPlayer();
+					for (VirtualEquippedItem virtualItem : player.getVirtualEquipmentItems())
+					{
+						final ItemTemplate template = ItemData.getInstance().getTemplate(virtualItem.getItemId());
+						if ((template == null) || !template.isWeapon())
+						{
+							continue;
+						}
+						
+						final AttributeHolder weaponHolder = template.getAttribute(_type);
+						if (weaponHolder != null)
+						{
+							baseValue += weaponHolder.getValue();
+						}
+					}
+				}
 			}
 			else
 			{
@@ -83,6 +106,25 @@ public class AttributeFinalizer implements IStatFunction
 						if (weaponHolder != null)
 						{
 							baseValue += weaponHolder.getValue();
+						}
+					}
+				}
+				
+				if (creature.isPlayer())
+				{
+					final Player player = creature.asPlayer();
+					for (VirtualEquippedItem virtualItem : player.getVirtualEquipmentItems())
+					{
+						final ItemTemplate template = ItemData.getInstance().getTemplate(virtualItem.getItemId());
+						if ((template == null) || !template.isArmor())
+						{
+							continue;
+						}
+						
+						final AttributeHolder armorHolder = template.getAttribute(_type);
+						if (armorHolder != null)
+						{
+							baseValue += armorHolder.getValue();
 						}
 					}
 				}

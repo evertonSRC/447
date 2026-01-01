@@ -23,10 +23,13 @@ package org.l2jmobius.gameserver.model.stats.finalizers;
 import java.util.OptionalDouble;
 
 import org.l2jmobius.gameserver.config.NpcConfig;
+import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.actor.Player;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
 import org.l2jmobius.gameserver.model.actor.instance.Pet;
 import org.l2jmobius.gameserver.model.actor.transform.Transform;
+import org.l2jmobius.gameserver.model.item.ItemTemplate;
 import org.l2jmobius.gameserver.model.item.enums.BodyPart;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
@@ -70,6 +73,19 @@ public class PDefenseFinalizer implements IStatFunction
 			for (Item item : inv.getPaperdollItems())
 			{
 				baseValue += item.getTemplate().getStats(stat, 0);
+			}
+			
+			if (creature.isPlayer())
+			{
+				final Player player = creature.asPlayer();
+				for (VirtualEquippedItem virtualItem : player.getVirtualEquipmentItems())
+				{
+					final ItemTemplate template = ItemData.getInstance().getTemplate(virtualItem.getItemId());
+					if (template != null)
+					{
+						baseValue += template.getStats(stat, 0);
+					}
+				}
 			}
 			
 			if (creature.isPlayer())

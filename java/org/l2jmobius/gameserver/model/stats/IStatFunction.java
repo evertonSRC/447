@@ -20,14 +20,17 @@ import java.util.OptionalDouble;
 
 import org.l2jmobius.gameserver.config.OlympiadConfig;
 import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.instance.Pet;
 import org.l2jmobius.gameserver.model.actor.transform.Transform;
+import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.model.item.ItemTemplate;
 import org.l2jmobius.gameserver.model.item.enums.BodyPart;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.item.type.CrystalType;
 import org.l2jmobius.gameserver.model.item.type.WeaponType;
 import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
 
 /**
  * @author UnAfraid
@@ -46,12 +49,31 @@ public interface IStatFunction
 	default double calcEnchantBodyPart(Creature creature, BodyPart... bodyParts)
 	{
 		double value = 0;
+		final Player player = creature.isPlayer() ? creature.asPlayer() : null;
 		for (BodyPart bodyPart : bodyParts)
 		{
 			final Item item = creature.getInventory().getPaperdollItemByBodyPart(bodyPart);
 			if ((item != null) && (item.getEnchantLevel() >= 4) && ((item.getTemplate().getCrystalTypePlus() == CrystalType.R) || (item.getTemplate().getCrystalTypePlus() == CrystalType.L)))
 			{
 				value += calcEnchantBodyPartBonus(item.getEnchantLevel(), item.getTemplate().isBlessed());
+			}
+			
+			if (player != null)
+			{
+				for (VirtualEquippedItem virtualItem : player.getVirtualEquipmentItems())
+				{
+					final ItemTemplate template = ItemData.getInstance().getTemplate(virtualItem.getItemId());
+					if ((template == null) || (template.getBodyPart() != bodyPart))
+					{
+						continue;
+					}
+					
+					final int enchantLevel = player.getVirtualItemEnchantLevel(template, virtualItem.getEnchant());
+					if ((enchantLevel >= 4) && ((template.getCrystalTypePlus() == CrystalType.R) || (template.getCrystalTypePlus() == CrystalType.L)))
+					{
+						value += calcEnchantBodyPartBonus(enchantLevel, template.isBlessed());
+					}
+				}
 			}
 		}
 		
@@ -81,6 +103,11 @@ public interface IStatFunction
 			baseValue = (weapon != null ? weapon.getTemplate().getStats(stat, baseTemplateValue) : baseTemplateValue);
 		}
 		
+		if (creature.isPlayer())
+		{
+			baseValue += creature.asPlayer().getVirtualItemStats(stat);
+		}
+		
 		return baseValue;
 	}
 	
@@ -95,6 +122,10 @@ public interface IStatFunction
 			if (inv != null)
 			{
 				baseValue += inv.getPaperdollCache().getStats(stat);
+				if (creature.isPlayer())
+				{
+					baseValue += creature.asPlayer().getVirtualItemStats(stat);
+				}
 			}
 		}
 		
@@ -109,6 +140,7 @@ public interface IStatFunction
 		}
 		
 		double value = 0;
+		final Player player = creature.asPlayer();
 		for (Item equippedItem : creature.getInventory().getPaperdollItems(Item::isEnchanted))
 		{
 			final ItemTemplate item = equippedItem.getTemplate();
@@ -163,6 +195,50 @@ public interface IStatFunction
 			}
 		}
 		
+		for (VirtualEquippedItem virtualItem : player.getVirtualEquipmentItems())
+		{
+			final ItemTemplate template = ItemData.getInstance().getTemplate(virtualItem.getItemId());
+			if (template == null)
+			{
+				continue;
+			}
+			
+			final BodyPart bodyPart = template.getBodyPart();
+			if ((bodyPart == BodyPart.HAIR) || //
+				(bodyPart == BodyPart.HAIR2) || //
+				(bodyPart == BodyPart.HAIRALL))
+			{
+				if ((stat != Stat.PHYSICAL_DEFENCE) && (stat != Stat.MAGICAL_DEFENCE))
+				{
+					continue;
+				}
+			}
+			else if (template.getStats(stat, 0) <= 0)
+			{
+				continue;
+			}
+			
+			final int enchant = player.getVirtualItemEnchantLevel(template, virtualItem.getEnchant());
+			if (enchant <= 0)
+			{
+				continue;
+			}
+			
+			final double blessedBonus = template.isBlessed() ? 1.5 : 1;
+			if ((stat == Stat.MAGICAL_DEFENCE) || (stat == Stat.PHYSICAL_DEFENCE))
+			{
+				value += calcEnchantDefBonus(template, blessedBonus, enchant);
+			}
+			else if (stat == Stat.MAGIC_ATTACK)
+			{
+				value += calcEnchantMatkBonus(template, blessedBonus, enchant);
+			}
+			else if ((stat == Stat.PHYSICAL_ATTACK) && template.isWeapon())
+			{
+				value += calcEnchantedPAtkBonus(template, blessedBonus, enchant);
+			}
+		}
+		
 		return value;
 	}
 	
@@ -175,6 +251,22 @@ public interface IStatFunction
 	static double calcEnchantDefBonus(Item item, double blessedBonus, int enchant)
 	{
 		switch (item.getTemplate().getCrystalTypePlus())
+		{
+			case L:
+			case R:
+			{
+				return ((2 * blessedBonus * enchant) + (6 * blessedBonus * Math.max(0, enchant - 3)));
+			}
+			default:
+			{
+				return enchant + (3 * Math.max(0, enchant - 3));
+			}
+		}
+	}
+
+	static double calcEnchantDefBonus(ItemTemplate item, double blessedBonus, int enchant)
+	{
+		switch (item.getCrystalTypePlus())
 		{
 			case L:
 			case R:
@@ -221,6 +313,32 @@ public interface IStatFunction
 			{
 				// M. Atk. increases by 2 for all weapons. Starting at +4, M. Atk. bonus double.
 				// Starting at +4, M. Atk. bonus double.
+				return (2 * enchant) + (4 * Math.max(0, enchant - 3));
+			}
+		}
+	}
+
+	static double calcEnchantMatkBonus(ItemTemplate item, double blessedBonus, int enchant)
+	{
+		switch (item.getCrystalTypePlus())
+		{
+			case L:
+			case R:
+			{
+				return ((5 * blessedBonus * enchant) + (10 * blessedBonus * Math.max(0, enchant - 3)));
+			}
+			case S:
+			{
+				return (4 * enchant) + (8 * Math.max(0, enchant - 3));
+			}
+			case A:
+			case B:
+			case C:
+			{
+				return (3 * enchant) + (6 * Math.max(0, enchant - 3));
+			}
+			default:
+			{
 				return (2 * enchant) + (4 * Math.max(0, enchant - 3));
 			}
 		}
@@ -324,6 +442,99 @@ public interface IStatFunction
 				// P. Atk. increases by 2 for all weapons with the exception of bows.
 				// Starting at +4, P. Atk. bonus double.
 				return (2 * enchant) + (4 * Math.max(0, enchant - 3));
+			}
+		}
+	}
+
+	static double calcEnchantedPAtkBonus(ItemTemplate item, double blessedBonus, int enchant)
+	{
+		final WeaponType weaponType = (WeaponType) item.getItemType();
+		switch (item.getCrystalTypePlus())
+		{
+			case L:
+			case R:
+			{
+				if ((item.getBodyPart() == BodyPart.LR_HAND) && (weaponType != WeaponType.POLE))
+				{
+					if (weaponType.isRanged())
+					{
+						return (12 * blessedBonus * enchant) + (24 * blessedBonus * Math.max(0, enchant - 3));
+					}
+					
+					return (7 * blessedBonus * enchant) + (14 * blessedBonus * Math.max(0, enchant - 3));
+				}
+				
+				return (6 * blessedBonus * enchant) + (12 * blessedBonus * Math.max(0, enchant - 3));
+			}
+			case S:
+			{
+				if ((item.getBodyPart() == BodyPart.LR_HAND) && (weaponType != WeaponType.POLE))
+				{
+					if (weaponType.isRanged())
+					{
+						return (10 * enchant) + (20 * Math.max(0, enchant - 3));
+					}
+					
+					return (6 * enchant) + (12 * Math.max(0, enchant - 3));
+				}
+				
+				return (5 * enchant) + (10 * Math.max(0, enchant - 3));
+			}
+			case A:
+			{
+				if ((item.getBodyPart() == BodyPart.LR_HAND) && (weaponType != WeaponType.POLE))
+				{
+					if (weaponType.isRanged())
+					{
+						return (8 * enchant) + (16 * Math.max(0, enchant - 3));
+					}
+					
+					return (5 * enchant) + (10 * Math.max(0, enchant - 3));
+				}
+				
+				return (4 * enchant) + (8 * Math.max(0, enchant - 3));
+			}
+			case B:
+			{
+				if ((item.getBodyPart() == BodyPart.LR_HAND) && (weaponType != WeaponType.POLE))
+				{
+					if (weaponType.isRanged())
+					{
+						return (6 * enchant) + (12 * Math.max(0, enchant - 3));
+					}
+					
+					return (4 * enchant) + (8 * Math.max(0, enchant - 3));
+				}
+				
+				return (3 * enchant) + (6 * Math.max(0, enchant - 3));
+			}
+			case C:
+			{
+				if ((item.getBodyPart() == BodyPart.LR_HAND) && (weaponType != WeaponType.POLE))
+				{
+					if (weaponType.isRanged())
+					{
+						return (5 * enchant) + (10 * Math.max(0, enchant - 3));
+					}
+					
+					return (3 * enchant) + (6 * Math.max(0, enchant - 3));
+				}
+				
+				return (2 * enchant) + (4 * Math.max(0, enchant - 3));
+			}
+			default:
+			{
+				if ((item.getBodyPart() == BodyPart.LR_HAND) && (weaponType != WeaponType.POLE))
+				{
+					if (weaponType.isRanged())
+					{
+						return (4 * enchant) + (8 * Math.max(0, enchant - 3));
+					}
+					
+					return (2 * enchant) + (4 * Math.max(0, enchant - 3));
+				}
+				
+				return (1 * enchant) + (2 * Math.max(0, enchant - 3));
 			}
 		}
 	}
