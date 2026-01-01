@@ -241,6 +241,7 @@ public class PlayerConfig
 	public static boolean DISABLE_TUTORIAL;
 	public static boolean STORE_RECIPE_SHOPLIST;
 	public static boolean STORE_UI_SETTINGS;
+	public static boolean ENABLE_VIRTUAL_ITEMS_UI;
 	public static String[] FORBIDDEN_NAMES;
 	public static boolean SILENCE_MODE_EXCLUDE;
 	public static boolean SHOW_INTRO_VIDEO;
@@ -584,6 +585,7 @@ public class PlayerConfig
 		DISABLE_TUTORIAL = config.getBoolean("DisableTutorial", false);
 		STORE_RECIPE_SHOPLIST = config.getBoolean("StoreRecipeShopList", false);
 		STORE_UI_SETTINGS = config.getBoolean("StoreCharUiSettings", true);
+		ENABLE_VIRTUAL_ITEMS_UI = config.getBoolean("EnableVirtualItemsUI", true);
 		FORBIDDEN_NAMES = config.getString("ForbiddenNames", "").split(",");
 		SILENCE_MODE_EXCLUDE = config.getBoolean("SilenceModeExclude", false);
 		SHOW_INTRO_VIDEO = config.getBoolean("ShowIntroVideo", true);

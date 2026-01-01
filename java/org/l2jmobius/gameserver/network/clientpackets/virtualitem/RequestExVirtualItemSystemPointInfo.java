@@ -20,6 +20,7 @@
  */
 package org.l2jmobius.gameserver.network.clientpackets.virtualitem;
 
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.network.clientpackets.ClientPacket;
 import org.l2jmobius.gameserver.network.serverpackets.virtualitem.ExVirtualItemSystemPointInfo;
@@ -39,6 +40,10 @@ public class RequestExVirtualItemSystemPointInfo extends ClientPacket
 	{
 		final Player player = getPlayer();
 		if (player == null)
+		{
+			return;
+		}
+		if (!PlayerConfig.ENABLE_VIRTUAL_ITEMS_UI)
 		{
 			return;
 		}

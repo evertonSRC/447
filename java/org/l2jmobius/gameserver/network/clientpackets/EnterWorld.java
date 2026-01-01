@@ -49,6 +49,7 @@ import org.l2jmobius.gameserver.data.xml.ClanHallData;
 import org.l2jmobius.gameserver.data.xml.EnchantItemGroupsData;
 import org.l2jmobius.gameserver.data.xml.MableGameData;
 import org.l2jmobius.gameserver.data.xml.SkillTreeData;
+import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.managers.AntiFeedManager;
 import org.l2jmobius.gameserver.managers.CastleManager;
 import org.l2jmobius.gameserver.managers.CoupleManager;
@@ -160,6 +161,9 @@ import org.l2jmobius.gameserver.network.serverpackets.relics.ExRelicsCollectionI
 import org.l2jmobius.gameserver.network.serverpackets.relics.ExRelicsExchangeList;
 import org.l2jmobius.gameserver.network.serverpackets.relics.ExRelicsList;
 import org.l2jmobius.gameserver.network.serverpackets.settings.ExItemAnnounceSetting;
+import org.l2jmobius.gameserver.network.serverpackets.virtualitem.ExVirtualItemSystem;
+import org.l2jmobius.gameserver.network.serverpackets.virtualitem.ExVirtualItemSystemBaseInfo;
+import org.l2jmobius.gameserver.network.serverpackets.virtualitem.ExVirtualItemSystemPointInfo;
 
 /**
  * Enter World Packet Handler
@@ -832,6 +836,13 @@ public class EnterWorld extends ClientPacket
 		if (MableGameData.getInstance().isEnabled())
 		{
 			player.sendPacket(ExMableGameUILauncher.STATIC_PACKET);
+		}
+		
+		if (PlayerConfig.ENABLE_VIRTUAL_ITEMS_UI)
+		{
+			player.sendPacket(new ExVirtualItemSystemBaseInfo(VirtualItemData.getInstance().getGroups()));
+			player.sendPacket(new ExVirtualItemSystem(player));
+			player.sendPacket(new ExVirtualItemSystemPointInfo(player.getVirtualPoints()));
 		}
 		
 		// World Trade.
