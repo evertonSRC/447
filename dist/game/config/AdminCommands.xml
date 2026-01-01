@@ -487,8 +487,6 @@
 	
 	<!-- ADMIN VIS POINTS -->
 	<admin command="vispoints" description="Manage VIS points." accessLevel="100" />
-	<admin command="visequip" description="Equip virtual item from catalog." accessLevel="100" />
-	<admin command="visunequip" description="Unequip virtual item from slot." accessLevel="100" />
 
 	<!-- PREMIUM SYSTEM -->
 	<admin command="premium_menu" description="Opens the Premium Service Manager interface." accessLevel="100" />
