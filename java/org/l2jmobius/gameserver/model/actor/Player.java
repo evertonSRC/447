@@ -119,6 +119,7 @@ import org.l2jmobius.gameserver.data.xml.SkillData;
 import org.l2jmobius.gameserver.data.xml.SkillTreeData;
 import org.l2jmobius.gameserver.data.xml.SymbolSealData;
 import org.l2jmobius.gameserver.data.xml.TimedHuntingZoneData;
+import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.geoengine.GeoEngine;
 import org.l2jmobius.gameserver.handler.IItemHandler;
 import org.l2jmobius.gameserver.handler.ItemHandler;
@@ -273,10 +274,13 @@ import org.l2jmobius.gameserver.model.item.ItemTemplate;
 import org.l2jmobius.gameserver.model.item.Weapon;
 import org.l2jmobius.gameserver.model.item.enums.BodyPart;
 import org.l2jmobius.gameserver.model.item.enums.BroochJewel;
+import org.l2jmobius.gameserver.model.item.enums.ItemSkillType;
 import org.l2jmobius.gameserver.model.item.enums.ItemGrade;
 import org.l2jmobius.gameserver.model.item.enums.ItemLocation;
 import org.l2jmobius.gameserver.model.item.enums.ItemProcessType;
 import org.l2jmobius.gameserver.model.item.virtual.VirtualEquippedItem;
+import org.l2jmobius.gameserver.model.item.virtual.VirtualItemGroup;
+import org.l2jmobius.gameserver.model.item.virtual.VirtualItemTemplate;
 import org.l2jmobius.gameserver.model.item.virtual.VirtualSlot;
 import org.l2jmobius.gameserver.model.item.holders.ItemHolder;
 import org.l2jmobius.gameserver.model.item.holders.ItemSkillHolder;
@@ -321,6 +325,7 @@ import org.l2jmobius.gameserver.model.skill.CommonSkill;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.skill.SkillCaster;
 import org.l2jmobius.gameserver.model.skill.SkillCastingType;
+import org.l2jmobius.gameserver.model.skill.SkillConditionScope;
 import org.l2jmobius.gameserver.model.skill.enums.NextActionType;
 import org.l2jmobius.gameserver.model.skill.enums.SkillFinishType;
 import org.l2jmobius.gameserver.model.skill.holders.SkillHolder;
@@ -1516,6 +1521,283 @@ public class Player extends Playable
 		}
 		
 		LOGGER.fine("Player " + getName() + " empty virtual equipment slots: " + String.join(", ", emptySlots));
+	}
+	
+	public boolean equipVirtualFromCatalog(int indexMain, int indexSub)
+	{
+		final VirtualItemGroup group = VirtualItemData.getInstance().getByIndexMain(indexMain);
+		if (group == null)
+		{
+			sendMessage("Virtual item group not found.");
+			return false;
+		}
+		
+		final VirtualItemTemplate template = group.getTemplate(indexSub);
+		if (template == null)
+		{
+			sendMessage("Virtual item template not found.");
+			return false;
+		}
+		
+		return equipVirtual(template.getSlot(), template.getItemId(), template.getEnchant(), template.getCostVISPoint());
+	}
+	
+	/**
+	 * Equips a virtual item, replacing any existing item in the slot and charging the cost again.
+	 */
+	public boolean equipVirtual(VirtualSlot slot, int itemId, int enchant, int cost)
+	{
+		if (slot == null)
+		{
+			sendMessage("Invalid virtual slot.");
+			return false;
+		}
+		
+		if (VirtualItemData.getInstance().getTemplate(slot, itemId, enchant, cost) == null)
+		{
+			sendMessage("Virtual item not found in catalog.");
+			return false;
+		}
+		
+		if (getVirtualPoints() < cost)
+		{
+			sendMessage("Not enough VIS points.");
+			return false;
+		}
+		
+		if (_virtualEquipment.get(slot) != null)
+		{
+			unequipVirtual(slot);
+		}
+		
+		if (cost > 0)
+		{
+			removeVirtualPoints(cost);
+		}
+		
+		final Item item = new Item(itemId);
+		item.setVirtual(true);
+		item.setEnchantLevel(enchant);
+		
+		_virtualEquipment.put(slot, new VirtualEquippedItem(itemId, enchant, item));
+		
+		final Inventory inventory = getInventory();
+		if (inventory != null)
+		{
+			inventory.getPaperdollCache().getPaperdollItems().add(item);
+			inventory.getPaperdollCache().clearCachedStats();
+		}
+		
+		applyVirtualItemSkills(item, true);
+		getStat().recalculateStats(true);
+		updateUserInfo();
+		broadcastStatusUpdate(this);
+		return true;
+	}
+	
+	public boolean unequipVirtual(VirtualSlot slot)
+	{
+		final VirtualEquippedItem equippedItem = _virtualEquipment.remove(slot);
+		if (equippedItem == null)
+		{
+			return false;
+		}
+		
+		final Item item = equippedItem.getItem();
+		final Inventory inventory = getInventory();
+		if ((item != null) && (inventory != null))
+		{
+			inventory.getPaperdollCache().getPaperdollItems().remove(item);
+			inventory.getPaperdollCache().clearCachedStats();
+		}
+		
+		if (item != null)
+		{
+			applyVirtualItemSkills(item, false);
+		}
+		
+		getStat().recalculateStats(true);
+		updateUserInfo();
+		broadcastStatusUpdate(this);
+		return true;
+	}
+	
+	private void applyVirtualItemSkills(Item item, boolean equip)
+	{
+		final ItemTemplate template = item.getTemplate();
+		if (!template.hasSkills())
+		{
+			return;
+		}
+		
+		boolean update = false;
+		if (equip)
+		{
+			update |= addVirtualItemSkills(template.getSkills(ItemSkillType.NORMAL), item.getEnchantLevel());
+			update |= addVirtualItemSkills(template.getSkills(ItemSkillType.ON_ENCHANT), item.getEnchantLevel());
+			template.forEachSkill(ItemSkillType.ON_EQUIP, holder ->
+			{
+				final Skill skill = holder.getSkill();
+				if (skill != null)
+				{
+					skill.activateSkill(this, this);
+				}
+			});
+		}
+		else
+		{
+			update |= removeVirtualItemSkills(template.getSkills(ItemSkillType.NORMAL), item.getEnchantLevel());
+			update |= removeVirtualItemSkills(template.getSkills(ItemSkillType.ON_ENCHANT), item.getEnchantLevel());
+			template.forEachSkill(ItemSkillType.ON_UNEQUIP, holder ->
+			{
+				final Skill skill = holder.getSkill();
+				if (skill != null)
+				{
+					skill.activateSkill(this, this);
+				}
+			});
+		}
+		
+		if (update)
+		{
+			sendSkillList();
+		}
+	}
+	
+	private boolean addVirtualItemSkills(List<ItemSkillHolder> skills, int enchantLevel)
+	{
+		if (skills == null)
+		{
+			return false;
+		}
+		
+		boolean updated = false;
+		for (ItemSkillHolder holder : skills)
+		{
+			if ((holder.getType() == ItemSkillType.ON_ENCHANT) && (enchantLevel < holder.getValue()))
+			{
+				continue;
+			}
+			
+			final Skill skill = holder.getSkill();
+			if (skill == null)
+			{
+				continue;
+			}
+			
+			if (skill.isPassive() && !skill.checkConditions(SkillConditionScope.PASSIVE, this, this))
+			{
+				continue;
+			}
+			
+			if (getSkillLevel(holder.getSkillId()) >= holder.getSkillLevel())
+			{
+				continue;
+			}
+			
+			addSkill(skill, false);
+			updated = true;
+		}
+		
+		return updated;
+	}
+	
+	private boolean removeVirtualItemSkills(List<ItemSkillHolder> skills, int enchantLevel)
+	{
+		if (skills == null)
+		{
+			return false;
+		}
+		
+		boolean updated = false;
+		for (ItemSkillHolder holder : skills)
+		{
+			if ((holder.getType() == ItemSkillType.ON_ENCHANT) && (enchantLevel < holder.getValue()))
+			{
+				continue;
+			}
+			
+			final Skill skill = holder.getSkill();
+			if (skill == null)
+			{
+				continue;
+			}
+			
+			if (isSkillProvidedByEquippedItems(holder.getSkillId(), holder.getSkillLevel()))
+			{
+				continue;
+			}
+			
+			removeSkill(skill, false, skill.isPassive());
+			updated = true;
+		}
+		
+		return updated;
+	}
+	
+	private boolean isSkillProvidedByEquippedItems(int skillId, int skillLevel)
+	{
+		final Inventory inventory = getInventory();
+		if (inventory == null)
+		{
+			return false;
+		}
+		
+		for (Item equipped : inventory.getPaperdollItems())
+		{
+			if ((equipped == null) || !equipped.getTemplate().hasSkills())
+			{
+				continue;
+			}
+			
+			if (doesItemProvideSkill(equipped.getTemplate(), equipped.getEnchantLevel(), skillId, skillLevel))
+			{
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	private boolean doesItemProvideSkill(ItemTemplate template, int enchantLevel, int skillId, int skillLevel)
+	{
+		return isSkillInList(template.getSkills(ItemSkillType.NORMAL), enchantLevel, skillId, skillLevel) || isSkillInList(template.getSkills(ItemSkillType.ON_ENCHANT), enchantLevel, skillId, skillLevel);
+	}
+	
+	private boolean isSkillInList(List<ItemSkillHolder> skills, int enchantLevel, int skillId, int skillLevel)
+	{
+		if (skills == null)
+		{
+			return false;
+		}
+		
+		for (ItemSkillHolder holder : skills)
+		{
+			if (holder.getSkillId() != skillId)
+			{
+				continue;
+			}
+			
+			if ((holder.getType() == ItemSkillType.ON_ENCHANT) && (enchantLevel < holder.getValue()))
+			{
+				continue;
+			}
+			
+			final Skill skill = holder.getSkill();
+			if ((skill == null) || (skill.getLevel() < skillLevel))
+			{
+				continue;
+			}
+			
+			if (skill.isPassive() && !skill.checkConditions(SkillConditionScope.PASSIVE, this, this))
+			{
+				continue;
+			}
+			
+			return true;
+		}
+		
+		return false;
 	}
 	
 	public Collection<RankingHistoryDataHolder> getRankingHistoryData()
