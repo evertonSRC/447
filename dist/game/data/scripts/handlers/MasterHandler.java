@@ -106,6 +106,7 @@ import handlers.admincommandhandlers.AdminHelp;
 import handlers.admincommandhandlers.AdminHide;
 import handlers.admincommandhandlers.AdminHtml;
 import handlers.admincommandhandlers.AdminHwid;
+import handlers.admincommandhandlers.AdminIllusoryEquipment;
 import handlers.admincommandhandlers.AdminInstance;
 import handlers.admincommandhandlers.AdminInstanceZone;
 import handlers.admincommandhandlers.AdminInvul;
@@ -429,6 +430,7 @@ public class MasterHandler
 			AdminHide.class,
 			AdminHtml.class,
 			AdminHwid.class,
+			AdminIllusoryEquipment.class,
 			AdminInstance.class,
 			AdminInstanceZone.class,
 			AdminInvul.class,

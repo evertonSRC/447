@@ -21,9 +21,14 @@
 package org.l2jmobius.gameserver.data.xml;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
@@ -33,8 +38,8 @@ import org.w3c.dom.Node;
 import org.l2jmobius.commons.util.IXmlReader;
 import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
 import org.l2jmobius.gameserver.data.holders.VirtualItemHolder;
-import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.item.ItemTemplate;
+import org.l2jmobius.gameserver.model.skill.Skill;
 
 /**
  * @author CostyKiller
@@ -43,7 +48,8 @@ public class VirtualItemData implements IXmlReader
 {
 	private static final Logger LOGGER = Logger.getLogger(VirtualItemData.class.getName());
 	
-	private static final Map<Integer, VirtualItemHolder> VIRTUAL_ITEMS = new HashMap<>();
+	private static final Map<Integer, Map<Integer, VirtualItemHolder>> VIRTUAL_ITEMS = new HashMap<>();
+	private static final Set<Integer> MAIN_INDEXES = new TreeSet<>();
 	
 	protected VirtualItemData()
 	{
@@ -57,6 +63,7 @@ public class VirtualItemData implements IXmlReader
 	public void load()
 	{
 		VIRTUAL_ITEMS.clear();
+		MAIN_INDEXES.clear();
 		
 		if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_ENABLED)
 		{
@@ -65,7 +72,32 @@ public class VirtualItemData implements IXmlReader
 		
 		if (!VIRTUAL_ITEMS.isEmpty())
 		{
-			LOGGER.info(getClass().getSimpleName() + ": Loaded " + VIRTUAL_ITEMS.size() + " virtual items.");
+			final int totalItems = VIRTUAL_ITEMS.values().stream().mapToInt(Map::size).sum();
+			LOGGER.info(getClass().getSimpleName() + ": Loaded " + totalItems + " virtual items across " + MAIN_INDEXES.size() + " main indexes.");
+			if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
+			{
+				final List<VirtualItemHolder> samples = new ArrayList<>();
+				for (Map<Integer, VirtualItemHolder> subItems : VIRTUAL_ITEMS.values())
+				{
+					for (VirtualItemHolder holder : subItems.values())
+					{
+						samples.add(holder);
+						if (samples.size() >= 3)
+						{
+							break;
+						}
+					}
+					if (samples.size() >= 3)
+					{
+						break;
+					}
+				}
+				
+				for (VirtualItemHolder holder : samples)
+				{
+					LOGGER.info(getClass().getSimpleName() + ": Example indexMain=" + holder.getIndexMain() + " indexSub=" + holder.getIndexSub() + " itemId=" + holder.getItemId());
+				}
+			}
 		}
 		else
 		{
@@ -85,42 +117,37 @@ public class VirtualItemData implements IXmlReader
 					if ("virtualItem".equalsIgnoreCase(d.getNodeName()))
 					{
 						NamedNodeMap attrs = d.getAttributes();
-						Node att;
-						final StatSet set = new StatSet();
-						for (int i = 0; i < attrs.getLength(); i++)
-						{
-							att = attrs.item(i);
-							set.set(att.getNodeName(), att.getNodeValue());
-						}
 						
 						final int indexMain = parseInteger(attrs, "indexMain");
-						int indexSub = 0;
-						long slot = 0;
-						int itemId = 0;
-						int enchant = 0;
-						int costVISPoint = 0;
+						MAIN_INDEXES.add(indexMain);
 						for (Node b = d.getFirstChild(); b != null; b = b.getNextSibling())
 						{
-							attrs = b.getAttributes();
 							if ("virtualItemStat".equalsIgnoreCase(b.getNodeName()))
 							{
-								slot = parseLong(attrs, "slot");
-								indexSub = parseInteger(attrs, "indexSub");
-								itemId = parseInteger(attrs, "itemId");
-								enchant = parseInteger(attrs, "enchant");
-								costVISPoint = parseInteger(attrs, "costVISPoint");
+								attrs = b.getAttributes();
+								final long slot = parseLong(attrs, "slot");
+								final int indexSub = parseInteger(attrs, "indexSub");
+								final int itemId = parseInteger(attrs, "itemId");
+								final int enchant = parseInteger(attrs, "enchant");
+								final int costVISPoint = parseInteger(attrs, "costVISPoint");
+								
+								final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
+								final Skill skillTemplate = SkillData.getInstance().getSkill(itemId, enchant);
+								if ((itemTemplate == null) && (skillTemplate == null))
+								{
+									LOGGER.warning(getClass().getSimpleName() + ": Could not find item or skill template for id " + itemId + " (indexMain=" + indexMain + ", indexSub=" + indexSub + ").");
+									continue;
+								}
+								
+								if (VIRTUAL_ITEMS.computeIfAbsent(indexMain, key -> new HashMap<>()).containsKey(indexSub))
+								{
+									LOGGER.warning(getClass().getSimpleName() + ": Duplicate virtual item indexMain=" + indexMain + " indexSub=" + indexSub + " found in " + file.getName());
+									continue;
+								}
+								
+								final VirtualItemHolder template = new VirtualItemHolder(indexMain, slot, indexSub, itemId, enchant, costVISPoint);
+								VIRTUAL_ITEMS.get(indexMain).put(indexSub, template);
 							}
-						}
-						
-						final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
-						if (itemTemplate != null)
-						{
-							final VirtualItemHolder template = new VirtualItemHolder(indexMain, slot, indexSub, itemId, enchant, costVISPoint);
-							VIRTUAL_ITEMS.put(indexMain, template);
-						}
-						else
-						{
-							LOGGER.warning(getClass().getSimpleName() + ": Could not find item template for id " + itemId);
 						}
 					}
 				}
@@ -129,33 +156,43 @@ public class VirtualItemData implements IXmlReader
 	}
 	
 	/**
-	 * Retrieves the virtual item ID associated with a specified virtual item index.
-	 * @param mainIndex the unique index of the virtual item to retrieve the item ID for
+	 * Retrieves the virtual item holder associated with a specified virtual item index pair.
+	 * @param mainIndex the unique main index of the virtual item
+	 * @param subIndex the unique sub index of the virtual item
 	 * @return the virtual item ID, or {@code 0} if no virtual item is associated with the specified index
 	 */
-	public VirtualItemHolder getVirtualItem(int mainIndex)
+	public VirtualItemHolder getVirtualItem(int mainIndex, int subIndex)
 	{
-		return VIRTUAL_ITEMS.get(mainIndex);
+		final Map<Integer, VirtualItemHolder> subItems = VIRTUAL_ITEMS.get(mainIndex);
+		if (subItems == null)
+		{
+			return null;
+		}
+		return subItems.get(subIndex);
 	}
 	
 	/**
 	 * Retrieves the virtual item ID associated with a specified virtual item index.
 	 * @param mainIndex the unique index of the virtual item to retrieve the item ID for
+	 * @param subIndex the unique sub index of the virtual item to retrieve the item ID for
 	 * @return the virtual item ID, or {@code 0} if no virtual item is associated with the specified index
 	 */
-	public int getVirtualItemId(int mainIndex)
+	public int getVirtualItemId(int mainIndex, int subIndex)
 	{
-		return VIRTUAL_ITEMS.get(mainIndex).getItemId();
+		final VirtualItemHolder holder = getVirtualItem(mainIndex, subIndex);
+		return holder != null ? holder.getItemId() : 0;
 	}
 	
 	/**
 	 * Retrieves the virtual item enchant level associated with a specified virtual item ID.
 	 * @param mainIndex the unique ID of the virtual item to retrieve the enchant level for
+	 * @param subIndex the unique sub index of the virtual item to retrieve the enchant level for
 	 * @return the enchant level of the virtual item, or {@code 0} if no virtual item is associated with the specified ID
 	 */
-	public int getVirtualItemEnchant(int mainIndex)
+	public int getVirtualItemEnchant(int mainIndex, int subIndex)
 	{
-		return VIRTUAL_ITEMS.get(mainIndex).getEnchant();
+		final VirtualItemHolder holder = getVirtualItem(mainIndex, subIndex);
+		return holder != null ? holder.getEnchant() : 0;
 	}
 	
 	/**
@@ -164,7 +201,36 @@ public class VirtualItemData implements IXmlReader
 	 */
 	public Collection<VirtualItemHolder> getVirtualItems()
 	{
-		return VIRTUAL_ITEMS.values();
+		final List<VirtualItemHolder> results = new ArrayList<>();
+		for (Map<Integer, VirtualItemHolder> subItems : VIRTUAL_ITEMS.values())
+		{
+			results.addAll(subItems.values());
+		}
+		return results;
+	}
+	
+	/**
+	 * Retrieves all available virtual items for a main index.
+	 * @param mainIndex the main index
+	 * @return a collection of virtual items
+	 */
+	public Collection<VirtualItemHolder> getVirtualItems(int mainIndex)
+	{
+		final Map<Integer, VirtualItemHolder> subItems = VIRTUAL_ITEMS.get(mainIndex);
+		if (subItems == null)
+		{
+			return Collections.emptyList();
+		}
+		return subItems.values();
+	}
+	
+	/**
+	 * Retrieves all main indexes that have virtual items defined.
+	 * @return a set of main indexes
+	 */
+	public Set<Integer> getMainIndexes()
+	{
+		return MAIN_INDEXES;
 	}
 	
 	public static VirtualItemData getInstance()

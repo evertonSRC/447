@@ -94,6 +94,7 @@ import org.l2jmobius.gameserver.model.siege.Siege;
 import org.l2jmobius.gameserver.model.skill.AbnormalVisualEffect;
 import org.l2jmobius.gameserver.model.variables.AccountVariables;
 import org.l2jmobius.gameserver.model.variables.PlayerVariables;
+import org.l2jmobius.gameserver.model.virtualitem.VirtualItemService;
 import org.l2jmobius.gameserver.model.zone.ZoneId;
 import org.l2jmobius.gameserver.network.ConnectionState;
 import org.l2jmobius.gameserver.network.Disconnection;
@@ -394,6 +395,12 @@ public class EnterWorld extends ClientPacket
 		
 		// Send Teleport Bookmark List
 		player.sendPacket(new ExGetBookMarkInfoPacket(player));
+		
+		// Apply Illusory Equipment selections before inventory and skill list.
+		if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_ENABLED)
+		{
+			VirtualItemService.reapplySelections(player);
+		}
 		
 		// Send Item List
 		player.sendPacket(new ItemList(1, player));

@@ -20,6 +20,8 @@
  */
 package org.l2jmobius.gameserver.config;
 
+import java.util.logging.Logger;
+
 import org.l2jmobius.commons.util.ConfigReader;
 
 /**
@@ -28,6 +30,8 @@ import org.l2jmobius.commons.util.ConfigReader;
  */
 public class IllusoryEquipmentConfig
 {
+	private static final Logger LOGGER = Logger.getLogger(IllusoryEquipmentConfig.class.getName());
+	
 	// File
 	private static final String ILLUSORY_EQUIPMENT_CONFIG_FILE = "./config/IllusoryEquipment.ini";
 	
@@ -44,5 +48,7 @@ public class IllusoryEquipmentConfig
 		ILLUSORY_EQUIPMENT_EVENT_DURATION = config.getInt("Duration", 5);
 		ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED = config.getBoolean("Debug", false);
 		ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT = config.getInt("PointsLimit", 600);
+		
+		LOGGER.info("IllusoryEquipmentConfig: Enabled=" + ILLUSORY_EQUIPMENT_ENABLED + ", Duration=" + ILLUSORY_EQUIPMENT_EVENT_DURATION + ", Debug=" + ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED + ", PointsLimit=" + ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT);
 	}
 }
