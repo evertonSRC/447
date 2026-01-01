@@ -68,6 +68,7 @@ import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.PvpConfig;
 import org.l2jmobius.gameserver.config.RatesConfig;
 import org.l2jmobius.gameserver.config.RelicSystemConfig;
+import org.l2jmobius.gameserver.config.ServerConfig;
 import org.l2jmobius.gameserver.config.custom.DualboxCheckConfig;
 import org.l2jmobius.gameserver.config.custom.FactionSystemConfig;
 import org.l2jmobius.gameserver.config.custom.FakePlayersConfig;
@@ -95,6 +96,8 @@ import org.l2jmobius.gameserver.data.sql.CharSummonTable;
 import org.l2jmobius.gameserver.data.sql.ClanTable;
 import org.l2jmobius.gameserver.data.sql.OfflinePlayTable;
 import org.l2jmobius.gameserver.data.sql.OfflineTraderTable;
+import org.l2jmobius.gameserver.data.sql.VirtualEquipmentDAO;
+import org.l2jmobius.gameserver.data.sql.VirtualPointsDAO;
 import org.l2jmobius.gameserver.data.xml.AdminData;
 import org.l2jmobius.gameserver.data.xml.AttendanceRewardData;
 import org.l2jmobius.gameserver.data.xml.CategoryData;
@@ -192,6 +195,7 @@ import org.l2jmobius.gameserver.model.actor.holders.player.RankingHistoryDataHol
 import org.l2jmobius.gameserver.model.actor.holders.player.Shortcut;
 import org.l2jmobius.gameserver.model.actor.holders.player.Shortcuts;
 import org.l2jmobius.gameserver.model.actor.holders.player.SubClassHolder;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquipmentHolder;
 import org.l2jmobius.gameserver.model.actor.instance.AirShip;
 import org.l2jmobius.gameserver.model.actor.instance.Boat;
 import org.l2jmobius.gameserver.model.actor.instance.ControlTower;
@@ -1054,6 +1058,9 @@ public class Player extends Playable
 	private final HuntPass _huntPass;
 	
 	private final RankingHistory _rankingHistory;
+
+	private int _virtualPoints = 0;
+	private final Map<Integer, VirtualEquipmentHolder> _virtualEquipment = new ConcurrentHashMap<>();
 	
 	private final List<QuestTimer> _questTimers = new ArrayList<>();
 	private final List<TimerHolder<?>> _timerHolders = new ArrayList<>();
@@ -1489,6 +1496,62 @@ public class Player extends Playable
 	public Collection<RankingHistoryDataHolder> getRankingHistoryData()
 	{
 		return _rankingHistory.getData();
+	}
+	
+	public int getVirtualPoints()
+	{
+		return _virtualPoints;
+	}
+	
+	public void setVirtualPoints(int points)
+	{
+		setVirtualPoints(points, true);
+	}
+	
+	public int addVirtualPoints(int points)
+	{
+		_virtualPoints = VirtualPointsDAO.getInstance().addPoints(getObjectId(), points);
+		getVariables().set(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, _virtualPoints);
+		return _virtualPoints;
+	}
+	
+	public Map<Integer, VirtualEquipmentHolder> getVirtualEquipment()
+	{
+		return Collections.unmodifiableMap(_virtualEquipment);
+	}
+	
+	public VirtualEquipmentHolder getVirtualEquipment(int slot)
+	{
+		return _virtualEquipment.get(slot);
+	}
+	
+	public void setVirtualEquipment(int slot, int itemId, int enchant, int indexMain, int indexSub)
+	{
+		if (itemId <= 0)
+		{
+			removeVirtualEquipment(slot);
+			return;
+		}
+		
+		final VirtualEquipmentHolder holder = new VirtualEquipmentHolder(slot, itemId, enchant, indexMain, indexSub);
+		_virtualEquipment.put(slot, holder);
+		VirtualEquipmentDAO.getInstance().saveSlot(getObjectId(), holder);
+	}
+	
+	public void removeVirtualEquipment(int slot)
+	{
+		_virtualEquipment.remove(slot);
+		VirtualEquipmentDAO.getInstance().deleteSlot(getObjectId(), slot);
+	}
+	
+	private void setVirtualPoints(int points, boolean store)
+	{
+		_virtualPoints = Math.max(0, points);
+		getVariables().set(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, _virtualPoints);
+		if (store)
+		{
+			VirtualPointsDAO.getInstance().setPoints(getObjectId(), _virtualPoints);
+		}
 	}
 	
 	/**
@@ -7985,6 +8048,9 @@ public class Player extends Playable
 		// Retrieve base attribute bonuses.
 		restoreBaseAttributeBonuses();
 		
+		// Restore virtual item points and equipment.
+		restoreVirtualItemData();
+		
 		// Retrieve from the database all teleport bookmark of this Player and add them to _tpbookmark.
 		restoreTeleportBookmark();
 		
@@ -8025,6 +8091,19 @@ public class Player extends Playable
 		final BaseAttributeBonusHolder[] bonuses = BaseAttributeBonusTable.getInstance().loadBonuses(getObjectId());
 		_baseAttributeBonusMain.copyFrom(bonuses[0]);
 		_baseAttributeBonusDual.copyFrom(bonuses[1]);
+	}
+	
+	private void restoreVirtualItemData()
+	{
+		setVirtualPoints(VirtualPointsDAO.getInstance().getPoints(getObjectId()), false);
+		
+		_virtualEquipment.clear();
+		_virtualEquipment.putAll(VirtualEquipmentDAO.getInstance().load(getObjectId()));
+		
+		if (ServerConfig.VIRTUAL_ITEM_DEBUG && !_virtualEquipment.isEmpty())
+		{
+			LOGGER.info(getClass().getSimpleName() + ": Loaded " + _virtualEquipment.size() + " virtual equipment entries for " + getName() + ".");
+		}
 	}
 	
 	/**
@@ -8172,6 +8251,7 @@ public class Player extends Playable
 		// Store collections.
 		storeCollections();
 		storeCollectionFavorites();
+		storeVirtualItemData();
 		
 		final PlayerVariables vars = getScript(PlayerVariables.class);
 		if (vars != null)
@@ -8199,6 +8279,12 @@ public class Player extends Playable
 	public void storeMe()
 	{
 		store(true);
+	}
+	
+	private void storeVirtualItemData()
+	{
+		VirtualPointsDAO.getInstance().setPoints(getObjectId(), _virtualPoints);
+		VirtualEquipmentDAO.getInstance().saveAll(getObjectId(), _virtualEquipment.values());
 	}
 	
 	private void storeCharBase()
