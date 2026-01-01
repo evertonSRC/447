@@ -22,9 +22,14 @@ package org.l2jmobius.gameserver.network.clientpackets.virtualItem;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.l2jmobius.gameserver.data.holders.VirtualItemEntry;
+import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.model.actor.Player;
+import org.l2jmobius.gameserver.model.actor.enums.player.VirtualSlot;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
+import org.l2jmobius.gameserver.model.virtual.VirtualItemService;
 import org.l2jmobius.gameserver.network.SystemMessageId;
 import org.l2jmobius.gameserver.network.clientpackets.ClientPacket;
 import org.l2jmobius.gameserver.network.serverpackets.virtualItem.ExVirtualItemSystem;
@@ -92,6 +97,61 @@ public class RequestExVirtualItemSystem extends ClientPacket
 			return;
 		}
 		
-		player.sendPacket(new ExVirtualItemSystem(player, _type, _selectIndexMain, _selectIndexSub, _selectSlot, _updateVisItemInfo));
+		boolean result = true;
+		if (_type == 3)
+		{
+			final VirtualItemService.VirtualItemResult equipResult;
+			if (_selectIndexMain > 0)
+			{
+				equipResult = VirtualItemService.equipVirtualItem(player, _selectIndexMain, _selectIndexSub, _selectSlot);
+			}
+			else if (_selectSlot > 0)
+			{
+				final VirtualSlot slot = VirtualSlot.fromClientSlot(_selectSlot);
+				equipResult = VirtualItemService.unequipVirtualItem(player, slot);
+			}
+			else
+			{
+				result = false;
+				player.sendMessage("Nenhum item virtual foi selecionado.");
+				equipResult = null;
+			}
+			
+			if ((equipResult != null) && !equipResult.isSuccess())
+			{
+				result = false;
+				player.sendMessage(equipResult.getMessage());
+			}
+		}
+		
+		_updateVisItemInfo.clear();
+		_updateVisItemInfo.addAll(buildEquippedItems(player));
+		player.sendPacket(new ExVirtualItemSystem(player, _type, _selectIndexMain, _selectIndexSub, _selectSlot, _updateVisItemInfo, result));
+	}
+
+	private static List<VirtualItemEntry> buildEquippedItems(Player player)
+	{
+		final List<VirtualItemEntry> entries = new LinkedList<>();
+		if (player == null)
+		{
+			return entries;
+		}
+		
+		for (Entry<VirtualSlot, VirtualEquippedItem> entry : player.getVirtualEquipment().getItems().entrySet())
+		{
+			final VirtualSlot slot = entry.getKey();
+			final VirtualEquippedItem equipped = entry.getValue();
+			if ((slot == null) || (equipped == null))
+			{
+				continue;
+			}
+			
+			final VirtualItemEntry dataEntry = VirtualItemData.getInstance().getVirtualItemEntry(equipped.getIndexMain(), equipped.getIndexSub());
+			final int cost = dataEntry != null ? dataEntry.getCostVISPoint() : 0;
+			final long slotIdClient = (dataEntry != null) && (dataEntry.getSlotIdClient() > 0) ? dataEntry.getSlotIdClient() : slot.getClientSlotId();
+			entries.add(new VirtualItemEntry(equipped.getIndexMain(), equipped.getIndexSub(), slotIdClient, slot.getId(), slot.getAlias(), equipped.getItemId(), equipped.getEnchant(), cost));
+		}
+		
+		return entries;
 	}
 }
