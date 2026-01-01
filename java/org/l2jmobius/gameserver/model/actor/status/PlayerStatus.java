@@ -55,6 +55,8 @@ public class PlayerStatus extends PlayableStatus
 	
 	private double _currentCp = 0; // Current CP of the Player
 	private double _currentStamina = 0; // Current Stamina of the Player
+	private double _staminaRegenAccumulator = 0;
+	private long _lastStaminaRegenTime = 0;
 	private Future<?> _staminaRegenTask;
 	
 	public PlayerStatus(Player player)
@@ -121,6 +123,8 @@ public class PlayerStatus extends PlayableStatus
 	{
 		if (_staminaRegenTask == null)
 		{
+			_staminaRegenAccumulator = 0;
+			_lastStaminaRegenTime = System.currentTimeMillis();
 			_staminaRegenTask = ThreadPool.scheduleAtFixedRate(this::doStaminaRegeneration, STAMINA_REGEN_PERIOD_MS, STAMINA_REGEN_PERIOD_MS);
 		}
 	}
@@ -131,6 +135,8 @@ public class PlayerStatus extends PlayableStatus
 		{
 			_staminaRegenTask.cancel(false);
 			_staminaRegenTask = null;
+			_staminaRegenAccumulator = 0;
+			_lastStaminaRegenTime = 0;
 		}
 	}
 	
@@ -143,13 +149,42 @@ public class PlayerStatus extends PlayableStatus
 			return;
 		}
 		
+		if (PlayerConfig.STAMINA_REGEN_PER_SECOND <= 0)
+		{
+			stopStaminaRegeneration();
+			return;
+		}
+		
 		if (_currentStamina >= player.getMaxStamina())
 		{
 			stopStaminaRegeneration();
 			return;
 		}
 		
-		setCurrentStamina(_currentStamina + 1, true);
+		final long now = System.currentTimeMillis();
+		if (_lastStaminaRegenTime == 0)
+		{
+			_lastStaminaRegenTime = now;
+			return;
+		}
+		
+		final long elapsedMs = now - _lastStaminaRegenTime;
+		if (elapsedMs <= 0)
+		{
+			return;
+		}
+		
+		_lastStaminaRegenTime = now;
+		// Accumulate fractional regen over time so rates like 0.5/s can add up without drift.
+		_staminaRegenAccumulator += (elapsedMs / 1000.0) * PlayerConfig.STAMINA_REGEN_PER_SECOND;
+		final int staminaToApply = (int) Math.floor(_staminaRegenAccumulator);
+		if (staminaToApply <= 0)
+		{
+			return;
+		}
+		
+		_staminaRegenAccumulator -= staminaToApply;
+		setCurrentStamina(_currentStamina + staminaToApply, true);
 	}
 	
 	@Override
