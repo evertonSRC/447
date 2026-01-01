@@ -131,6 +131,7 @@ import org.l2jmobius.gameserver.data.xml.TeleportListData;
 import org.l2jmobius.gameserver.data.xml.TeleporterData;
 import org.l2jmobius.gameserver.data.xml.TimedHuntingZoneData;
 import org.l2jmobius.gameserver.data.xml.TransformData;
+import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.data.xml.VariationData;
 import org.l2jmobius.gameserver.geoengine.GeoEngine;
 import org.l2jmobius.gameserver.handler.ConditionHandler;
@@ -279,6 +280,7 @@ public class GameServer
 		printSection("Items");
 		ConditionHandler.getInstance().executeScript();
 		ItemData.getInstance();
+		VirtualItemData.getInstance();
 		EnchantItemGroupsData.getInstance();
 		EnchantItemData.getInstance();
 		EnchantItemOptionsData.getInstance();
