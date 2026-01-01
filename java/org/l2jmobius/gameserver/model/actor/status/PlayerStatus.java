@@ -50,6 +50,7 @@ public class PlayerStatus extends PlayableStatus
 {
 	private double _currentCp = 0; // Current CP of the Player
 	private double _currentStamina = 0; // Current Stamina of the Player
+	private long _lastStaminaRegenTime = 0;
 	
 	public PlayerStatus(Player player)
 	{
@@ -476,15 +477,30 @@ public class PlayerStatus extends PlayableStatus
 
 		if (PlayerConfig.ENABLE_STAMINA && (_currentStamina < player.getMaxStamina()))
 		{
+			final long now = System.currentTimeMillis();
+			if (_lastStaminaRegenTime == 0)
+			{
+				_lastStaminaRegenTime = now;
+			}
+
 			final boolean canRegenInCombat = PlayerConfig.STAMINA_REGEN_IN_COMBAT || !player.isInCombat();
 			if (canRegenInCombat && !player.isStaminaRegenDelayed())
 			{
-				final double regenAmount = PlayerConfig.STAMINA_REGEN_PER_SECOND * (Formulas.getRegeneratePeriod(player) / 1000.0);
+				final double regenAmount = PlayerConfig.STAMINA_REGEN_PER_SECOND * ((now - _lastStaminaRegenTime) / 1000.0);
 				if (regenAmount > 0)
 				{
+					_lastStaminaRegenTime = now;
 					setCurrentStamina(_currentStamina + regenAmount, true);
 				}
 			}
+			else
+			{
+				_lastStaminaRegenTime = now;
+			}
+		}
+		else if (_currentStamina >= player.getMaxStamina())
+		{
+			_lastStaminaRegenTime = 0;
 		}
 		
 		player.broadcastStatusUpdate(); // send the StatusUpdate packet
