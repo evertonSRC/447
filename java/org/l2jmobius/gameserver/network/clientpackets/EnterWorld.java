@@ -30,7 +30,6 @@ import org.l2jmobius.gameserver.config.AttendanceRewardsConfig;
 import org.l2jmobius.gameserver.config.ConquestConfig;
 import org.l2jmobius.gameserver.config.GeneralConfig;
 import org.l2jmobius.gameserver.config.HuntPassConfig;
-import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
 import org.l2jmobius.gameserver.config.OlympiadConfig;
 import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.RelicSystemConfig;
@@ -161,7 +160,6 @@ import org.l2jmobius.gameserver.network.serverpackets.relics.ExRelicsCollectionI
 import org.l2jmobius.gameserver.network.serverpackets.relics.ExRelicsExchangeList;
 import org.l2jmobius.gameserver.network.serverpackets.relics.ExRelicsList;
 import org.l2jmobius.gameserver.network.serverpackets.settings.ExItemAnnounceSetting;
-import org.l2jmobius.gameserver.network.serverpackets.virtualItem.ExVirtualItemSystemBaseInfo;
 
 /**
  * Enter World Packet Handler
@@ -813,11 +811,6 @@ public class EnterWorld extends ClientPacket
 			player.sendPacket(new ExRelicsExchangeList(player));
 		}
 		
-		// Illusory Equipment.
-		if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_ENABLED)
-		{
-			player.sendPacket(new ExVirtualItemSystemBaseInfo(player));
-		}
 		
 		player.sendPacket(new ItemDeletionInfo());
 		

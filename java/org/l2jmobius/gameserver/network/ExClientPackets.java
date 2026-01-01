@@ -258,7 +258,6 @@ import org.l2jmobius.gameserver.network.clientpackets.variation.ExVariationClose
 import org.l2jmobius.gameserver.network.clientpackets.variation.ExVariationOpenUi;
 import org.l2jmobius.gameserver.network.clientpackets.variation.RequestConfirmGemStone;
 import org.l2jmobius.gameserver.network.clientpackets.variation.RequestRefine;
-import org.l2jmobius.gameserver.network.clientpackets.virtualItem.RequestExVirtualItemSystem;
 import org.l2jmobius.gameserver.network.clientpackets.worldexchange.ExWorldExchangeAveragePrice;
 import org.l2jmobius.gameserver.network.clientpackets.worldexchange.ExWorldExchangeBuyItem;
 import org.l2jmobius.gameserver.network.clientpackets.worldexchange.ExWorldExchangeItemList;
@@ -945,7 +944,6 @@ public enum ExClientPackets
 	EX_SERVERWAR_REWARD_INFO(0x294, null, ConnectionState.IN_GAME),
 	EX_SERVERWAR_GET_REWARD(0x295, null, ConnectionState.IN_GAME),
 	EX_RELICS_COMBINATION_COMPLETE(0x296, RequestRelicsCombinationComplete::new, ConnectionState.IN_GAME),
-	EX_VIRTUALITEM_SYSTEM(0x297, RequestExVirtualItemSystem::new, ConnectionState.IN_GAME),
 	EX_MAX(0x298, null, ConnectionState.IN_GAME);
 	
 	public static final ExClientPackets[] PACKET_ARRAY;
