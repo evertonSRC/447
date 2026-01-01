@@ -44,8 +44,10 @@ import org.l2jmobius.gameserver.model.item.virtual.VirtualItemTemplate;
 public class VirtualItemData implements IXmlReader
 {
 	private static final Logger LOGGER = Logger.getLogger(VirtualItemData.class.getName());
+	private static final String DATA_PATH = "data/VirtualItemData.xml";
 	
 	private final Map<Integer, VirtualItemGroup> _groups = new HashMap<>();
+	private boolean _loaded;
 	
 	protected VirtualItemData()
 	{
@@ -55,14 +57,30 @@ public class VirtualItemData implements IXmlReader
 	@Override
 	public synchronized void load()
 	{
+		_loaded = false;
 		_groups.clear();
-		parseDatapackFile("data/VirtualItemData.xml");
-		LOGGER.info(getClass().getSimpleName() + ": Loaded " + getVirtualItemCount() + " virtual items.");
+		final File file = new File(".", DATA_PATH);
+		if (!isValidXmlFile(file))
+		{
+			LOGGER.warning(getClass().getSimpleName() + ": Missing or invalid " + DATA_PATH + "; virtual item UI data will not be available.");
+			return;
+		}
+		
+		parseFile(file);
+		if (_loaded)
+		{
+			LOGGER.info(getClass().getSimpleName() + ": Loaded " + getVirtualItemCount() + " virtual items.");
+		}
+		else
+		{
+			LOGGER.warning(getClass().getSimpleName() + ": Failed to load " + DATA_PATH + "; virtual item UI data will not be available.");
+		}
 	}
 	
 	@Override
 	public void parseDocument(Document document, File file)
 	{
+		_loaded = true;
 		for (Node n = document.getFirstChild(); n != null; n = n.getNextSibling())
 		{
 			if ("list".equalsIgnoreCase(n.getNodeName()))
@@ -189,6 +207,11 @@ public class VirtualItemData implements IXmlReader
 		}
 		
 		return null;
+	}
+	
+	public boolean isLoaded()
+	{
+		return _loaded;
 	}
 	
 	private int getVirtualItemCount()

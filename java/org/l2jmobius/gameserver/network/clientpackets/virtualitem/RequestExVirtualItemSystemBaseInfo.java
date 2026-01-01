@@ -20,8 +20,10 @@
  */
 package org.l2jmobius.gameserver.network.clientpackets.virtualitem;
 
-import org.l2jmobius.gameserver.data.xml.VirtualItemData;
+import java.util.logging.Logger;
+
 import org.l2jmobius.gameserver.config.PlayerConfig;
+import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.network.clientpackets.ClientPacket;
 import org.l2jmobius.gameserver.network.serverpackets.virtualitem.ExVirtualItemSystem;
@@ -33,6 +35,8 @@ import org.l2jmobius.gameserver.network.serverpackets.virtualitem.ExVirtualItemS
  */
 public class RequestExVirtualItemSystemBaseInfo extends ClientPacket
 {
+	private static final Logger LOGGER = Logger.getLogger(RequestExVirtualItemSystemBaseInfo.class.getName());
+	
 	@Override
 	protected void readImpl()
 	{
@@ -48,6 +52,11 @@ public class RequestExVirtualItemSystemBaseInfo extends ClientPacket
 		}
 		if (!PlayerConfig.ENABLE_VIRTUAL_ITEMS_UI)
 		{
+			return;
+		}
+		if (!VirtualItemData.getInstance().isLoaded())
+		{
+			LOGGER.warning(getClass().getSimpleName() + ": Virtual item data not loaded; skipping base info response for " + player.getName());
 			return;
 		}
 		

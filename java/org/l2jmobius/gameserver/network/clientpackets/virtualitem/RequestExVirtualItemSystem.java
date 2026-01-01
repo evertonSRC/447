@@ -20,7 +20,10 @@
  */
 package org.l2jmobius.gameserver.network.clientpackets.virtualitem;
 
+import java.util.logging.Logger;
+
 import org.l2jmobius.gameserver.config.PlayerConfig;
+import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.item.virtual.VirtualSlot;
 import org.l2jmobius.gameserver.network.clientpackets.ClientPacket;
@@ -32,6 +35,8 @@ import org.l2jmobius.gameserver.network.serverpackets.virtualitem.ExVirtualItemS
  */
 public class RequestExVirtualItemSystem extends ClientPacket
 {
+	private static final Logger LOGGER = Logger.getLogger(RequestExVirtualItemSystem.class.getName());
+	
 	private static final int ACTION_REFRESH = 0;
 	private static final int ACTION_EQUIP = 1;
 	private static final int ACTION_UNEQUIP = 2;
@@ -74,6 +79,11 @@ public class RequestExVirtualItemSystem extends ClientPacket
 		}
 		if (!PlayerConfig.ENABLE_VIRTUAL_ITEMS_UI)
 		{
+			return;
+		}
+		if (!VirtualItemData.getInstance().isLoaded())
+		{
+			LOGGER.warning(getClass().getSimpleName() + ": Virtual item data not loaded; skipping request from " + player.getName());
 			return;
 		}
 
