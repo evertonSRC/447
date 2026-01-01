@@ -20,6 +20,8 @@
  */
 package org.l2jmobius.gameserver.model.virtual;
 
+import java.util.logging.Logger;
+
 import org.l2jmobius.gameserver.data.holders.VirtualItemEntry;
 import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.model.actor.Player;
@@ -31,6 +33,8 @@ import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
  */
 public final class VirtualItemService
 {
+	private static final Logger LOGGER = Logger.getLogger(VirtualItemService.class.getName());
+	
 	private VirtualItemService()
 	{
 	}
@@ -65,8 +69,23 @@ public final class VirtualItemService
 			return VirtualItemResult.failure("Slot " + resolvedSlot.getAlias() + " já ocupado. Desequipe primeiro.");
 		}
 		
+		final int cost = entry.getCostVISPoint();
+		if (cost > 0)
+		{
+			final int availablePoints = player.getVirtualPoints();
+			if (availablePoints < cost)
+			{
+				LOGGER.warning("Virtual item equip denied for player " + player.getName() + " (" + player.getObjectId() + ") with points=" + availablePoints + " cost=" + cost + " entry=" + indexMain + ":" + indexSub + ".");
+				return VirtualItemResult.failure("Pontos insuficientes. Necessário: " + cost + ", disponível: " + availablePoints + ".");
+			}
+		}
+		
 		final VirtualEquippedItem item = new VirtualEquippedItem(entry.getItemId(), entry.getEnchant(), entry.getIndexMain(), entry.getIndexSub());
 		player.setVirtualEquipment(resolvedSlot, item);
+		if (cost > 0)
+		{
+			player.addVirtualPoints(-cost);
+		}
 		return VirtualItemResult.success("Virtual item equipado em " + resolvedSlot.getAlias() + ".", resolvedSlot, item);
 	}
 	

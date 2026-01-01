@@ -100,6 +100,9 @@
 	<!-- ADMIN DEBUG -->
 	<admin command="debug" description="Open debug menu." accessLevel="100" />
 	<admin command="virtualitem" description="Debug virtual equipment slots." accessLevel="100" />
+	<admin command="addvispoints" description="Add VIS points to player." accessLevel="100" />
+	<admin command="setvispoints" description="Set VIS points for player." accessLevel="100" />
+	<admin command="getvispoints" description="Get VIS points for player." accessLevel="100" />
 
 	<!-- ADMIN DELETE -->
 	<admin command="delete" description="Delete target NPC." accessLevel="100" />
