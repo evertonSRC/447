@@ -374,9 +374,10 @@ public class EnterWorld extends ClientPacket
 			showClanNotice = clan.isNoticeEnabled();
 		}
 		
-		if (PlayerConfig.ENABLE_VITALITY)
+		if (PlayerConfig.ENABLE_STAMINA)
 		{
 			player.sendPacket(new ExVitalityEffectInfo(player));
+			player.sendStaminaUpdate();
 		}
 		
 		// Enable Homunculus system.

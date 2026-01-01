@@ -18086,10 +18086,10 @@ public class SystemMessageId
 	@ClientString(id = 13110, message = "Maphr's Blessing has restored your life force. Replenishes 4 Vitality bars on Wednesdays and 1 Vitality bar on all other days.")
 	public static SystemMessageId MAPHR_S_BLESSING_HAS_RESTORED_YOUR_LIFE_FORCE_REPLENISHES_4_VITALITY_BARS_ON_WEDNESDAYS_AND_1_VITALITY_BAR_ON_ALL_OTHER_DAYS;
 	
-	@ClientString(id = 13111, message = "To get more, use skills or items that give Vitality bonus. Every day at 6:30 a.m. you recover 1 Vitality bar, except on Wednesdays when you recover all 4. Vitality is being replenished while you are in a peaceful zone.")
+	@ClientString(id = 13111, message = "Vigor: Skills de movimento e ação gastam vigor. vigor base é estatico mas pode ser alterado por itens ou builds.")
 	public static SystemMessageId TO_GET_MORE_USE_SKILLS_OR_ITEMS_THAT_GIVE_VITALITY_BONUS_EVERY_DAY_AT_6_30_A_M_YOU_RECOVER_1_VITALITY_BAR_EXCEPT_ON_WEDNESDAYS_WHEN_YOU_RECOVER_ALL_4_VITALITY_IS_BEING_REPLENISHED_WHILE_YOU_ARE_IN_A_PEACEFUL_ZONE;
 	
-	@ClientString(id = 13112, message = "To get more, use items that give Vitality bonus. Every day at 6:30 a.m. you recover 1 Vitality bar, except on Wednesdays when you recover all 4. If you have no Vitality, item/adena drop rate is decreased. Vitality is being replenished while you are in a peaceful zone.")
+	@ClientString(id = 13112, message = "Vigor: Skills de movimento e ação gastam vigor. vigor base é estatico mas pode ser alterado por itens ou builds.")
 	public static SystemMessageId TO_GET_MORE_USE_ITEMS_THAT_GIVE_VITALITY_BONUS_EVERY_DAY_AT_6_30_A_M_YOU_RECOVER_1_VITALITY_BAR_EXCEPT_ON_WEDNESDAYS_WHEN_YOU_RECOVER_ALL_4_IF_YOU_HAVE_NO_VITALITY_ITEM_ADENA_DROP_RATE_IS_DECREASED_VITALITY_IS_BEING_REPLENISHED_WHILE_YOU_ARE_IN_A_PEACEFUL_ZONE;
 	
 	@ClientString(id = 13113, message = "You cannot cancel the siege when you are recruiting mercenaries.")

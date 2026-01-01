@@ -21,6 +21,7 @@
 package org.l2jmobius.gameserver.model.actor;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -377,6 +378,7 @@ import org.l2jmobius.gameserver.network.serverpackets.ExUserInfoCubic;
 import org.l2jmobius.gameserver.network.serverpackets.ExUserInfoEquipSlot;
 import org.l2jmobius.gameserver.network.serverpackets.ExUserInfoInvenWeight;
 import org.l2jmobius.gameserver.network.serverpackets.ExVitalityEffectInfo;
+import org.l2jmobius.gameserver.network.serverpackets.ExVitalityPointInfo;
 import org.l2jmobius.gameserver.network.serverpackets.GetOnVehicle;
 import org.l2jmobius.gameserver.network.serverpackets.HennaInfo;
 import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
@@ -470,7 +472,9 @@ public class Player extends Playable
 	
 	// Character Character SQL String Definitions:
 	private static final String INSERT_CHARACTER = "INSERT INTO characters (account_name,charId,char_name,level,maxHp,curHp,maxCp,curCp,maxMp,curMp,face,hairStyle,hairColor,sex,exp,sp,reputation,fame,raidbossPoints,pvpkills,pkkills,clanid,race,classid,deletetime,cancraft,title,title_color,online,clan_privs,wantspeace,base_class,nobless,power_grade,vitality_points,createDate,lastAccess,kills,deaths) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	private static final String INSERT_CHARACTER_WITH_STAMINA = "INSERT INTO characters (account_name,charId,char_name,level,maxHp,curHp,maxCp,curCp,maxMp,curMp,face,hairStyle,hairColor,sex,exp,sp,reputation,fame,raidbossPoints,pvpkills,pkkills,clanid,race,classid,deletetime,cancraft,title,title_color,online,clan_privs,wantspeace,base_class,nobless,power_grade,vitality_points,current_stamina,createDate,lastAccess,kills,deaths) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	private static final String UPDATE_CHARACTER = "UPDATE characters SET level=?,maxHp=?,curHp=?,maxCp=?,curCp=?,maxMp=?,curMp=?,face=?,hairStyle=?,hairColor=?,sex=?,heading=?,x=?,y=?,z=?,exp=?,expBeforeDeath=?,sp=?,reputation=?,fame=?,raidbossPoints=?,pvpkills=?,pkkills=?,clanid=?,race=?,classid=?,deletetime=?,title=?,title_color=?,online=?,clan_privs=?,wantspeace=?,base_class=?,onlinetime=?,nobless=?,power_grade=?,subpledge=?,lvl_joined_academy=?,apprentice=?,sponsor=?,clan_join_expiry_time=?,clan_create_expiry_time=?,char_name=?,bookmarkslot=?,vitality_points=?,language=?,faction=?,pccafe_points=?,kills=?,deaths=? WHERE charId=?";
+	private static final String UPDATE_CHARACTER_WITH_STAMINA = "UPDATE characters SET level=?,maxHp=?,curHp=?,maxCp=?,curCp=?,maxMp=?,curMp=?,face=?,hairStyle=?,hairColor=?,sex=?,heading=?,x=?,y=?,z=?,exp=?,expBeforeDeath=?,sp=?,reputation=?,fame=?,raidbossPoints=?,pvpkills=?,pkkills=?,clanid=?,race=?,classid=?,deletetime=?,title=?,title_color=?,online=?,clan_privs=?,wantspeace=?,base_class=?,onlinetime=?,nobless=?,power_grade=?,subpledge=?,lvl_joined_academy=?,apprentice=?,sponsor=?,clan_join_expiry_time=?,clan_create_expiry_time=?,char_name=?,bookmarkslot=?,vitality_points=?,current_stamina=?,language=?,faction=?,pccafe_points=?,kills=?,deaths=? WHERE charId=?";
 	private static final String UPDATE_CHARACTER_ACCESS = "UPDATE characters SET accesslevel = ? WHERE charId = ?";
 	private static final String RESTORE_CHARACTER = "SELECT * FROM characters WHERE charId=?";
 	
@@ -515,6 +519,8 @@ public class Player extends Playable
 	private static final String INSERT_CHAR_RECIPE_SHOP = "REPLACE INTO character_recipeshoplist (`charId`, `recipeId`, `price`, `index`) VALUES (?, ?, ?, ?)";
 	private static final String RESTORE_CHAR_RECIPE_SHOP = "SELECT * FROM character_recipeshoplist WHERE charId=? ORDER BY `index`";
 	
+	private static volatile Boolean HAS_CURRENT_STAMINA_COLUMN;
+	
 	public static final String NEWBIE_KEY = "NEWBIE";
 	
 	public static final int ID_NONE = -1;
@@ -541,6 +547,7 @@ public class Player extends Playable
 	private long _onlineBeginTime;
 	private long _lastAccess;
 	private long _uptime;
+	private long _lastStaminaUse;
 	
 	private final InventoryUpdate _inventoryUpdate = new InventoryUpdate();
 	private ScheduledFuture<?> _inventoryUpdateTask;
@@ -1122,6 +1129,11 @@ public class Player extends Playable
 		
 		// Give 20 recommendations
 		player.setRecomLeft(20);
+		
+		if (PlayerConfig.ENABLE_STAMINA)
+		{
+			player.setCurrentStamina(player.getMaxStamina(), false);
+		}
 		
 		// Add the player in the characters table of the database
 		if (player.createDb())
@@ -7371,6 +7383,30 @@ public class Player extends Playable
 		}
 	}
 	
+	private static boolean hasCurrentStaminaColumn()
+	{
+		if (HAS_CURRENT_STAMINA_COLUMN != null)
+		{
+			return HAS_CURRENT_STAMINA_COLUMN;
+		}
+		
+		try (Connection con = DatabaseFactory.getConnection())
+		{
+			final DatabaseMetaData meta = con.getMetaData();
+			try (ResultSet rs = meta.getColumns(con.getCatalog(), null, "characters", "current_stamina"))
+			{
+				HAS_CURRENT_STAMINA_COLUMN = rs.next();
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Could not check current_stamina column.", e);
+			HAS_CURRENT_STAMINA_COLUMN = false;
+		}
+		
+		return HAS_CURRENT_STAMINA_COLUMN;
+	}
+	
 	/**
 	 * Create a new player in the characters table of the database.
 	 * @return
@@ -7378,47 +7414,53 @@ public class Player extends Playable
 	private boolean createDb()
 	{
 		try (Connection con = DatabaseFactory.getConnection();
-			PreparedStatement statement = con.prepareStatement(INSERT_CHARACTER))
+			PreparedStatement statement = con.prepareStatement(hasCurrentStaminaColumn() ? INSERT_CHARACTER_WITH_STAMINA : INSERT_CHARACTER))
 		{
-			statement.setString(1, _accountName);
-			statement.setInt(2, getObjectId());
-			statement.setString(3, getName());
-			statement.setInt(4, getLevel());
-			statement.setInt(5, getMaxHp());
-			statement.setDouble(6, getCurrentHp());
-			statement.setInt(7, getMaxCp());
-			statement.setDouble(8, getCurrentCp());
-			statement.setInt(9, getMaxMp());
-			statement.setDouble(10, getCurrentMp());
-			statement.setInt(11, _appearance.getFace());
-			statement.setInt(12, _appearance.getHairStyle());
-			statement.setInt(13, _appearance.getHairColor());
-			statement.setInt(14, _appearance.isFemale() ? 1 : 0);
-			statement.setLong(15, getExp());
-			statement.setLong(16, getSp());
-			statement.setInt(17, getReputation());
-			statement.setInt(18, _fame);
-			statement.setInt(19, _raidbossPoints);
-			statement.setInt(20, _pvpKills);
-			statement.setInt(21, _pkKills);
-			statement.setInt(22, _clanId);
-			statement.setInt(23, getRace().ordinal());
-			statement.setInt(24, getPlayerClass().getId());
-			statement.setLong(25, _deleteTimer);
-			statement.setInt(26, _createItemLevel > 0 ? 1 : 0);
-			statement.setString(27, getTitle());
-			statement.setInt(28, _appearance.getTitleColor());
-			statement.setInt(29, isOnlineInt());
-			statement.setInt(30, _clanPrivileges.getMask());
-			statement.setInt(31, _wantsPeace);
-			statement.setInt(32, _baseClass);
-			statement.setInt(33, _nobleLevel);
-			statement.setLong(34, 0);
-			statement.setInt(35, PlayerStat.MIN_VITALITY_POINTS);
-			statement.setDate(36, new Date(_createDate.getTimeInMillis()));
-			statement.setLong(37, System.currentTimeMillis());
-			statement.setInt(38, getTotalKills());
-			statement.setInt(39, getTotalDeaths());
+			final boolean hasStaminaColumn = hasCurrentStaminaColumn();
+			int index = 1;
+			statement.setString(index++, _accountName);
+			statement.setInt(index++, getObjectId());
+			statement.setString(index++, getName());
+			statement.setInt(index++, getLevel());
+			statement.setInt(index++, getMaxHp());
+			statement.setDouble(index++, getCurrentHp());
+			statement.setInt(index++, getMaxCp());
+			statement.setDouble(index++, getCurrentCp());
+			statement.setInt(index++, getMaxMp());
+			statement.setDouble(index++, getCurrentMp());
+			statement.setInt(index++, _appearance.getFace());
+			statement.setInt(index++, _appearance.getHairStyle());
+			statement.setInt(index++, _appearance.getHairColor());
+			statement.setInt(index++, _appearance.isFemale() ? 1 : 0);
+			statement.setLong(index++, getExp());
+			statement.setLong(index++, getSp());
+			statement.setInt(index++, getReputation());
+			statement.setInt(index++, _fame);
+			statement.setInt(index++, _raidbossPoints);
+			statement.setInt(index++, _pvpKills);
+			statement.setInt(index++, _pkKills);
+			statement.setInt(index++, _clanId);
+			statement.setInt(index++, getRace().ordinal());
+			statement.setInt(index++, getPlayerClass().getId());
+			statement.setLong(index++, _deleteTimer);
+			statement.setInt(index++, _createItemLevel > 0 ? 1 : 0);
+			statement.setString(index++, getTitle());
+			statement.setInt(index++, _appearance.getTitleColor());
+			statement.setInt(index++, isOnlineInt());
+			statement.setInt(index++, _clanPrivileges.getMask());
+			statement.setInt(index++, _wantsPeace);
+			statement.setInt(index++, _baseClass);
+			statement.setInt(index++, _nobleLevel);
+			statement.setLong(index++, 0);
+			statement.setInt(index++, PlayerStat.MIN_VITALITY_POINTS);
+			if (hasStaminaColumn)
+			{
+				statement.setInt(index++, (int) Math.round(getCurrentStamina()));
+			}
+			statement.setDate(index++, new Date(_createDate.getTimeInMillis()));
+			statement.setLong(index++, System.currentTimeMillis());
+			statement.setInt(index++, getTotalKills());
+			statement.setInt(index++, getTotalDeaths());
 			statement.executeUpdate();
 		}
 		catch (Exception e)
@@ -7445,6 +7487,7 @@ public class Player extends Playable
 		double currentCp = 0;
 		double currentHp = 0;
 		double currentMp = 0;
+		double currentStamina = -1;
 		try (Connection con = DatabaseFactory.getConnection();
 			PreparedStatement statement = con.prepareStatement(RESTORE_CHARACTER))
 		{
@@ -7509,6 +7552,10 @@ public class Player extends Playable
 					final int clanId = rset.getInt("clanid");
 					player.setPowerGrade(rset.getInt("power_grade"));
 					stat.setVitalityPoints(rset.getInt("vitality_points"));
+					if (hasCurrentStaminaColumn())
+					{
+						currentStamina = rset.getInt("current_stamina");
+					}
 					player.setPledgeType(rset.getInt("subpledge"));
 					// player.setApprentice(rset.getInt("apprentice"));
 					
@@ -7740,6 +7787,11 @@ public class Player extends Playable
 			
 			// Recalculate all stats
 			player.getStat().recalculateStats(false);
+			
+			if (PlayerConfig.ENABLE_STAMINA)
+			{
+				player.setCurrentStamina(currentStamina >= 0 ? currentStamina : player.getMaxStamina(), false);
+			}
 			
 			// Update the overloaded status of the Player
 			player.refreshOverloaded(false);
@@ -8156,60 +8208,66 @@ public class Player extends Playable
 		final int level = getStat().getBaseLevel();
 		final long sp = getStat().getBaseSp();
 		try (Connection con = DatabaseFactory.getConnection();
-			PreparedStatement statement = con.prepareStatement(UPDATE_CHARACTER))
+			PreparedStatement statement = con.prepareStatement(hasCurrentStaminaColumn() ? UPDATE_CHARACTER_WITH_STAMINA : UPDATE_CHARACTER))
 		{
-			statement.setInt(1, level);
-			statement.setInt(2, getMaxHp());
-			statement.setDouble(3, getCurrentHp());
-			statement.setInt(4, getMaxCp());
-			statement.setDouble(5, getCurrentCp());
-			statement.setInt(6, getMaxMp());
-			statement.setDouble(7, getCurrentMp());
-			statement.setInt(8, _appearance.getFace());
-			statement.setInt(9, _appearance.getHairStyle());
-			statement.setInt(10, _appearance.getHairColor());
-			statement.setInt(11, _appearance.isFemale() ? 1 : 0);
-			statement.setInt(12, getHeading());
-			statement.setInt(13, _lastLoc != null ? _lastLoc.getX() : getX());
-			statement.setInt(14, _lastLoc != null ? _lastLoc.getY() : getY());
-			statement.setInt(15, _lastLoc != null ? _lastLoc.getZ() : getZ());
-			statement.setLong(16, exp);
-			statement.setLong(17, _expBeforeDeath);
-			statement.setLong(18, sp);
-			statement.setInt(19, getReputation());
-			statement.setInt(20, _fame);
-			statement.setInt(21, _raidbossPoints);
-			statement.setInt(22, _pvpKills);
-			statement.setInt(23, _pkKills);
-			statement.setInt(24, _clanId);
-			statement.setInt(25, getRace().ordinal());
-			statement.setInt(26, getPlayerClass().getId());
-			statement.setLong(27, _deleteTimer);
-			statement.setString(28, getTitle());
-			statement.setInt(29, _appearance.getTitleColor());
-			statement.setInt(30, isOnlineInt());
-			statement.setInt(31, _clanPrivileges.getMask());
-			statement.setInt(32, _wantsPeace);
-			statement.setInt(33, _baseClass);
+			final boolean hasStaminaColumn = hasCurrentStaminaColumn();
+			int index = 1;
+			statement.setInt(index++, level);
+			statement.setInt(index++, getMaxHp());
+			statement.setDouble(index++, getCurrentHp());
+			statement.setInt(index++, getMaxCp());
+			statement.setDouble(index++, getCurrentCp());
+			statement.setInt(index++, getMaxMp());
+			statement.setDouble(index++, getCurrentMp());
+			statement.setInt(index++, _appearance.getFace());
+			statement.setInt(index++, _appearance.getHairStyle());
+			statement.setInt(index++, _appearance.getHairColor());
+			statement.setInt(index++, _appearance.isFemale() ? 1 : 0);
+			statement.setInt(index++, getHeading());
+			statement.setInt(index++, _lastLoc != null ? _lastLoc.getX() : getX());
+			statement.setInt(index++, _lastLoc != null ? _lastLoc.getY() : getY());
+			statement.setInt(index++, _lastLoc != null ? _lastLoc.getZ() : getZ());
+			statement.setLong(index++, exp);
+			statement.setLong(index++, _expBeforeDeath);
+			statement.setLong(index++, sp);
+			statement.setInt(index++, getReputation());
+			statement.setInt(index++, _fame);
+			statement.setInt(index++, _raidbossPoints);
+			statement.setInt(index++, _pvpKills);
+			statement.setInt(index++, _pkKills);
+			statement.setInt(index++, _clanId);
+			statement.setInt(index++, getRace().ordinal());
+			statement.setInt(index++, getPlayerClass().getId());
+			statement.setLong(index++, _deleteTimer);
+			statement.setString(index++, getTitle());
+			statement.setInt(index++, _appearance.getTitleColor());
+			statement.setInt(index++, isOnlineInt());
+			statement.setInt(index++, _clanPrivileges.getMask());
+			statement.setInt(index++, _wantsPeace);
+			statement.setInt(index++, _baseClass);
 			long totalOnlineTime = _onlineTime;
 			if (_onlineBeginTime > 0)
 			{
 				totalOnlineTime += (System.currentTimeMillis() - _onlineBeginTime) / 1000;
 			}
 			
-			statement.setLong(34, _offlineShopStart > 0 ? _onlineTime : totalOnlineTime);
-			statement.setInt(35, _nobleLevel);
-			statement.setInt(36, _powerGrade);
-			statement.setInt(37, _pledgeType);
-			statement.setInt(38, _lvlJoinedAcademy);
-			statement.setLong(39, _apprentice);
-			statement.setLong(40, _sponsor);
-			statement.setLong(41, _clanJoinExpiryTime);
-			statement.setLong(42, _clanCreateExpiryTime);
-			statement.setString(43, getName());
-			statement.setInt(44, _bookmarkslot);
-			statement.setInt(45, getStat().getBaseVitalityPoints());
-			statement.setString(46, _lang);
+			statement.setLong(index++, _offlineShopStart > 0 ? _onlineTime : totalOnlineTime);
+			statement.setInt(index++, _nobleLevel);
+			statement.setInt(index++, _powerGrade);
+			statement.setInt(index++, _pledgeType);
+			statement.setInt(index++, _lvlJoinedAcademy);
+			statement.setLong(index++, _apprentice);
+			statement.setLong(index++, _sponsor);
+			statement.setLong(index++, _clanJoinExpiryTime);
+			statement.setLong(index++, _clanCreateExpiryTime);
+			statement.setString(index++, getName());
+			statement.setInt(index++, _bookmarkslot);
+			statement.setInt(index++, getStat().getBaseVitalityPoints());
+			if (hasStaminaColumn)
+			{
+				statement.setInt(index++, (int) Math.round(getCurrentStamina()));
+			}
+			statement.setString(index++, _lang);
 			int factionId = 0;
 			if (_isGood)
 			{
@@ -8221,11 +8279,11 @@ public class Player extends Playable
 				factionId = 2;
 			}
 			
-			statement.setInt(47, factionId);
-			statement.setInt(48, _pcCafePoints);
-			statement.setInt(49, getTotalKills());
-			statement.setInt(50, getTotalDeaths());
-			statement.setInt(51, getObjectId());
+			statement.setInt(index++, factionId);
+			statement.setInt(index++, _pcCafePoints);
+			statement.setInt(index++, getTotalKills());
+			statement.setInt(index++, getTotalDeaths());
+			statement.setInt(index++, getObjectId());
 			statement.execute();
 		}
 		catch (Exception e)
@@ -13376,6 +13434,79 @@ public class Player extends Playable
 		}
 		
 		getStat().updateVitalityPoints(points, useRates, quiet);
+	}
+	
+	public int getMaxStamina()
+	{
+		return getStat().getMaxStamina();
+	}
+	
+	public double getCurrentStamina()
+	{
+		return getStatus().getCurrentStamina();
+	}
+	
+	public void setCurrentStamina(double value, boolean broadcastPacket)
+	{
+		getStatus().setCurrentStamina(value, broadcastPacket);
+	}
+	
+	public boolean reduceStamina(double amount)
+	{
+		if (amount <= 0)
+		{
+			return true;
+		}
+		
+		final double currentStamina = getCurrentStamina();
+		if (currentStamina + 1e-6 < amount)
+		{
+			return false;
+		}
+		
+		_lastStaminaUse = System.currentTimeMillis();
+		setCurrentStamina(currentStamina - amount, true);
+		return true;
+	}
+	
+	public boolean isStaminaRegenDelayed()
+	{
+		if (PlayerConfig.STAMINA_REGEN_DELAY_AFTER_USE_MS <= 0)
+		{
+			return false;
+		}
+		
+		return (System.currentTimeMillis() - _lastStaminaUse) < PlayerConfig.STAMINA_REGEN_DELAY_AFTER_USE_MS;
+	}
+	
+	public int getStaminaPointsForClient()
+	{
+		final int maxStamina = getMaxStamina();
+		if (maxStamina <= 0)
+		{
+			return 0;
+		}
+		
+		final double currentStamina = Math.max(0, Math.min(getCurrentStamina(), maxStamina));
+		return (int) Math.round((currentStamina / maxStamina) * PlayerStat.MAX_VITALITY_POINTS);
+	}
+	
+	public void sendStaminaUpdate()
+	{
+		if (!PlayerConfig.ENABLE_STAMINA)
+		{
+			return;
+		}
+		
+		sendPacket(new ExVitalityPointInfo(getStaminaPointsForClient()));
+		broadcastUserInfo(UserInfoType.VITA_FAME);
+		final Party party = getParty();
+		if (party != null)
+		{
+			final PartySmallWindowUpdate partyWindow = new PartySmallWindowUpdate(this, false);
+			partyWindow.addComponentType(PartySmallWindowUpdateType.VITALITY_POINTS);
+			party.broadcastToPartyMembers(this, partyWindow);
+		}
 	}
 	
 	public void checkItemRestriction()

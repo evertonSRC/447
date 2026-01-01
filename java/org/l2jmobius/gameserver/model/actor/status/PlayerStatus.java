@@ -21,6 +21,7 @@
 package org.l2jmobius.gameserver.model.actor.status;
 
 import org.l2jmobius.gameserver.ai.Intention;
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.custom.MultilingualSupportConfig;
 import org.l2jmobius.gameserver.config.custom.OfflineTradeConfig;
 import org.l2jmobius.gameserver.data.xml.NpcNameLocalisationData;
@@ -48,6 +49,7 @@ import org.l2jmobius.gameserver.util.LocationUtil;
 public class PlayerStatus extends PlayableStatus
 {
 	private double _currentCp = 0; // Current CP of the Player
+	private double _currentStamina = 0; // Current Stamina of the Player
 	
 	public PlayerStatus(Player player)
 	{
@@ -64,6 +66,46 @@ public class PlayerStatus extends PlayableStatus
 		else
 		{
 			setCurrentCp(0);
+		}
+	}
+
+	public double getCurrentStamina()
+	{
+		return _currentStamina;
+	}
+
+	public void setCurrentStamina(double value, boolean broadcastPacket)
+	{
+		final Player player = getActiveChar();
+		final int maxStamina = Math.max(0, player.getMaxStamina());
+		synchronized (this)
+		{
+			final double newStamina = Math.max(0, Math.min(value, maxStamina));
+			if (Math.abs(newStamina - _currentStamina) <= 1e-6)
+			{
+				return;
+			}
+
+			if (newStamina >= maxStamina)
+			{
+				_currentStamina = maxStamina;
+				_flagsRegenActive &= ~REGEN_FLAG_STAMINA;
+				if (_flagsRegenActive == 0)
+				{
+					stopHpMpRegeneration();
+				}
+			}
+			else
+			{
+				_currentStamina = newStamina;
+				_flagsRegenActive |= REGEN_FLAG_STAMINA;
+				startHpMpRegeneration();
+			}
+		}
+
+		if (broadcastPacket)
+		{
+			player.sendStaminaUpdate();
 		}
 	}
 	
@@ -430,6 +472,19 @@ public class PlayerStatus extends PlayableStatus
 		if (getCurrentMp() < stat.getMaxRecoverableMp())
 		{
 			setCurrentMp(getCurrentMp() + stat.getValue(Stat.REGENERATE_MP_RATE), false);
+		}
+
+		if (PlayerConfig.ENABLE_STAMINA && (_currentStamina < player.getMaxStamina()))
+		{
+			final boolean canRegenInCombat = PlayerConfig.STAMINA_REGEN_IN_COMBAT || !player.isInCombat();
+			if (canRegenInCombat && !player.isStaminaRegenDelayed())
+			{
+				final double regenAmount = PlayerConfig.STAMINA_REGEN_PER_SECOND * (Formulas.getRegeneratePeriod(player) / 1000.0);
+				if (regenAmount > 0)
+				{
+					setCurrentStamina(_currentStamina + regenAmount, true);
+				}
+			}
 		}
 		
 		player.broadcastStatusUpdate(); // send the StatusUpdate packet

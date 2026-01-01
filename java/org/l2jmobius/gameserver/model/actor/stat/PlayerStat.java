@@ -53,13 +53,10 @@ import org.l2jmobius.gameserver.model.stats.Formulas;
 import org.l2jmobius.gameserver.model.stats.Stat;
 import org.l2jmobius.gameserver.model.zone.ZoneId;
 import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.PartySmallWindowUpdateType;
 import org.l2jmobius.gameserver.network.enums.UserInfoType;
 import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
-import org.l2jmobius.gameserver.network.serverpackets.ExVitalityPointInfo;
 import org.l2jmobius.gameserver.network.serverpackets.ExVoteSystemInfo;
 import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.PartySmallWindowUpdate;
 import org.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListUpdate;
 import org.l2jmobius.gameserver.network.serverpackets.SocialAction;
 import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
@@ -591,15 +588,6 @@ public class PlayerStat extends PlayableStat
 		}
 		
 		final Player player = getActiveChar();
-		player.sendPacket(new ExVitalityPointInfo(getVitalityPoints()));
-		player.broadcastUserInfo(UserInfoType.VITA_FAME);
-		final Party party = player.getParty();
-		if (party != null)
-		{
-			final PartySmallWindowUpdate partyWindow = new PartySmallWindowUpdate(player, false);
-			partyWindow.addComponentType(PartySmallWindowUpdateType.VITALITY_POINTS);
-			party.broadcastToPartyMembers(player, partyWindow);
-		}
 		
 		// Send item list to update vitality items with red icons in inventory.
 		final List<Item> items = new LinkedList<>();
@@ -685,19 +673,10 @@ public class PlayerStat extends PlayableStat
 	public double getExpBonusMultiplier()
 	{
 		double bonus = 1.0;
-		double vitality = 1.0;
 		double bonusExp = 1.0;
-		
-		// Bonus from Vitality System
-		vitality = getVitalityExpBonus();
-		
+
 		// Bonus exp from skills
 		bonusExp = 1 + (getValue(Stat.BONUS_EXP, 0) / 100);
-		if (vitality > 1.0)
-		{
-			bonus += (vitality - 1);
-		}
-		
 		if (bonusExp > 1)
 		{
 			bonus += (bonusExp - 1);
@@ -716,19 +695,10 @@ public class PlayerStat extends PlayableStat
 	public double getSpBonusMultiplier()
 	{
 		double bonus = 1.0;
-		double vitality = 1.0;
 		double bonusSp = 1.0;
-		
-		// Bonus from Vitality System
-		vitality = getVitalityExpBonus();
-		
+
 		// Bonus sp from skills
 		bonusSp = 1 + (getValue(Stat.BONUS_SP, 0) / 100);
-		if (vitality > 1.0)
-		{
-			bonus += (vitality - 1);
-		}
-		
 		if (bonusSp > 1)
 		{
 			bonus += (bonusSp - 1);
@@ -803,6 +773,11 @@ public class PlayerStat extends PlayableStat
 			_onRecalculateStatsTask = ThreadPool.schedule(() ->
 			{
 				super.onRecalculateStats(broadcast);
+				if (PlayerConfig.ENABLE_STAMINA)
+				{
+					final Player player = getActiveChar();
+					player.setCurrentStamina(player.getCurrentStamina(), true);
+				}
 				
 				_onRecalculateStatsTask = null;
 			}, 50);

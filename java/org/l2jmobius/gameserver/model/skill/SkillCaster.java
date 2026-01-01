@@ -34,6 +34,7 @@ import org.l2jmobius.commons.util.Rnd;
 import org.l2jmobius.gameserver.ai.Action;
 import org.l2jmobius.gameserver.ai.Intention;
 import org.l2jmobius.gameserver.config.NpcConfig;
+import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.custom.ClassBalanceConfig;
 import org.l2jmobius.gameserver.config.custom.FakePlayersConfig;
 import org.l2jmobius.gameserver.data.xml.ActionData;
@@ -516,6 +517,11 @@ public class SkillCaster implements Runnable
 		
 		final StatusUpdate su = new StatusUpdate(caster);
 		
+		if (!handleStamina(caster, _skill, true))
+		{
+			return false;
+		}
+		
 		// Consume the required MP or stop casting if not enough.
 		final double mpConsume = _skill.getMpConsume() > 0 ? caster.getStat().getMpConsume(_skill) : 0;
 		if (mpConsume > 0)
@@ -889,6 +895,55 @@ public class SkillCaster implements Runnable
 		_coolTime = (int) (skill.getCoolTime() / timeFactor); // cooltimeMillis / timeFactor
 	}
 	
+	private static boolean handleStamina(Creature caster, Skill skill, boolean consume)
+	{
+		if (!PlayerConfig.ENABLE_STAMINA || !caster.isPlayer())
+		{
+			return true;
+		}
+		
+		final int staminaConsume = skill.getStaminaConsume();
+		if (staminaConsume <= 0)
+		{
+			return true;
+		}
+		
+		final Player player = caster.asPlayer();
+		if (player.getCurrentStamina() + 1e-6 < staminaConsume)
+		{
+			final SystemMessage sm = new SystemMessage(SystemMessageId.S1);
+			sm.addString("Not enough Stamina.");
+			caster.sendPacket(sm);
+			if (LOGGER.isLoggable(Level.FINE))
+			{
+				LOGGER.fine("Stamina blocked skill " + skill.getId() + " for " + player.getName() + " (need " + staminaConsume + ", have " + player.getCurrentStamina() + ").");
+			}
+			return false;
+		}
+		
+		if (consume)
+		{
+			if (!player.reduceStamina(staminaConsume))
+			{
+				final SystemMessage sm = new SystemMessage(SystemMessageId.S1);
+				sm.addString("Not enough Stamina.");
+				caster.sendPacket(sm);
+				if (LOGGER.isLoggable(Level.FINE))
+				{
+					LOGGER.fine("Stamina blocked skill " + skill.getId() + " for " + player.getName() + " (need " + staminaConsume + ", have " + player.getCurrentStamina() + ").");
+				}
+				return false;
+			}
+			
+			if (LOGGER.isLoggable(Level.FINE))
+			{
+				LOGGER.fine("Consumed " + staminaConsume + " stamina for skill " + skill.getId() + " on " + player.getName() + ".");
+			}
+		}
+		
+		return true;
+	}
+	
 	public static void triggerCast(Creature creature, Creature target, Skill skill)
 	{
 		triggerCast(creature, target, skill, null, true);
@@ -927,6 +982,11 @@ public class SkillCaster implements Runnable
 			
 			if (skill.checkCondition(creature, target, true))
 			{
+				if (!handleStamina(creature, skill, true))
+				{
+					return;
+				}
+				
 				if (creature.isSkillDisabled(skill))
 				{
 					return;
@@ -1122,6 +1182,12 @@ public class SkillCaster implements Runnable
 		if (caster.getCurrentHp() <= skill.getHpConsume())
 		{
 			caster.sendPacket(SystemMessageId.NOT_ENOUGH_HP);
+			caster.sendPacket(ActionFailed.STATIC_PACKET);
+			return false;
+		}
+		
+		if (!handleStamina(caster, skill, false))
+		{
 			caster.sendPacket(ActionFailed.STATIC_PACKET);
 			return false;
 		}

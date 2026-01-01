@@ -54,7 +54,7 @@ public class PartySmallWindowAdd extends ServerPacket
 		buffer.writeInt(_member.getMaxHp());
 		buffer.writeInt((int) _member.getCurrentMp());
 		buffer.writeInt(_member.getMaxMp());
-		buffer.writeInt(_member.getVitalityPoints());
+		buffer.writeInt(_member.getStaminaPointsForClient());
 		buffer.writeByte(_member.getLevel());
 		buffer.writeShort(_member.getPlayerClass().getId());
 		buffer.writeByte(0);

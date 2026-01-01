@@ -21,7 +21,6 @@
 package org.l2jmobius.gameserver.network.serverpackets;
 
 import org.l2jmobius.commons.network.WritableBuffer;
-import org.l2jmobius.gameserver.config.RatesConfig;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.enums.player.BonusExpType;
 import org.l2jmobius.gameserver.model.actor.stat.PlayerStat;
@@ -54,11 +53,8 @@ public class ExUserBoostStat extends ServerPacket
 		{
 			case VITALITY:
 			{
-				if (stat.getVitalityPoints() > 0)
-				{
-					count = (int) (stat.getValue(Stat.VITALITY_SKILLS, 0) + 1);
-					bonus = (int) (((stat.getMul(Stat.VITALITY_EXP_RATE, 1) - 1) + (_player.hasPremiumStatus() ? RatesConfig.RATE_VITALITY_EXP_PREMIUM_MULTIPLIER : RatesConfig.RATE_VITALITY_EXP_MULTIPLIER)) * 100d);
-				}
+				count = 0;
+				bonus = 0;
 				break;
 			}
 			case BUFFS:

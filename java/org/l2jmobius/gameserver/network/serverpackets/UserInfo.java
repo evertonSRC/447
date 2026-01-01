@@ -367,7 +367,7 @@ public class UserInfo extends AbstractMaskPacket<UserInfoType>
 		if (containsMask(UserInfoType.VITA_FAME))
 		{
 			buffer.writeShort(19); // 196
-			buffer.writeInt(_player.getVitalityPoints());
+			buffer.writeInt(_player.getStaminaPointsForClient());
 			buffer.writeByte(0); // Vita Bonus
 			buffer.writeInt(_player.getFame());
 			buffer.writeInt(_player.getRaidbossPoints());
