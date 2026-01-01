@@ -1654,7 +1654,7 @@ public class Player extends Playable
 		getStat().recalculateStats(true);
 		updateUserInfo();
 		broadcastStatusUpdate(this);
-		LOGGER.info("Player " + getName() + " unequipped virtual item " + equippedItem.getItemId() + " (enchant " + equippedItem.getEnchant() + ") from slot " + slot.getClientSlotName() + ".");
+		LOGGER.info("Player " + getName() + " unequipped virtual item " + equippedItem.getItemId() + " (enchant " + equippedItem.getEnchantLevel() + ") from slot " + slot.getClientSlotName() + ".");
 		return true;
 	}
 
@@ -8882,7 +8882,7 @@ public class Player extends Playable
 					insertStatement.setInt(1, getObjectId());
 					insertStatement.setInt(2, entry.getKey().getClientSlotId());
 					insertStatement.setInt(3, equippedItem.getItemId());
-					insertStatement.setInt(4, equippedItem.getEnchant());
+					insertStatement.setInt(4, equippedItem.getEnchantLevel());
 					insertStatement.addBatch();
 				}
 				
