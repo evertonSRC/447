@@ -30,6 +30,7 @@ import org.l2jmobius.commons.util.IXmlReader;
 import org.l2jmobius.gameserver.model.item.enums.BodyPart;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.item.type.CrystalType;
+import org.l2jmobius.gameserver.model.item.ItemTemplate;
 
 /**
  * @author MrPoke, Zoey76
@@ -98,6 +99,23 @@ public class EnchantItemHPBonusData implements IXmlReader
 		
 		final int bonus = values.get(Math.min(item.getOlyEnchantLevel(), values.size()) - 1);
 		if (item.getTemplate().getBodyPart() == BodyPart.FULL_ARMOR)
+		{
+			return (int) (bonus * FULL_ARMOR_MODIFIER);
+		}
+		
+		return bonus;
+	}
+
+	public int getHPBonus(ItemTemplate template, int enchantLevel)
+	{
+		final List<Integer> values = _armorHPBonuses.get(template.getCrystalTypePlus());
+		if ((values == null) || values.isEmpty() || (enchantLevel <= 0))
+		{
+			return 0;
+		}
+		
+		final int bonus = values.get(Math.min(enchantLevel, values.size()) - 1);
+		if (template.getBodyPart() == BodyPart.FULL_ARMOR)
 		{
 			return (int) (bonus * FULL_ARMOR_MODIFIER);
 		}

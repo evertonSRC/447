@@ -281,6 +281,7 @@ import org.l2jmobius.gameserver.model.item.enums.BroochJewel;
 import org.l2jmobius.gameserver.model.item.enums.ItemGrade;
 import org.l2jmobius.gameserver.model.item.enums.ItemLocation;
 import org.l2jmobius.gameserver.model.item.enums.ItemProcessType;
+import org.l2jmobius.gameserver.model.item.enums.ItemSkillType;
 import org.l2jmobius.gameserver.model.item.holders.ItemHolder;
 import org.l2jmobius.gameserver.model.item.holders.ItemSkillHolder;
 import org.l2jmobius.gameserver.model.item.instance.Item;
@@ -1063,6 +1064,7 @@ public class Player extends Playable
 
 	private int _virtualPoints = 0;
 	private final VirtualEquipment _virtualEquipment = new VirtualEquipment();
+	private final Set<Integer> _virtualItemSkillIds = ConcurrentHashMap.newKeySet();
 	
 	private final List<QuestTimer> _questTimers = new ArrayList<>();
 	private final List<TimerHolder<?>> _timerHolders = new ArrayList<>();
@@ -1522,6 +1524,47 @@ public class Player extends Playable
 		return _virtualEquipment;
 	}
 	
+	public Collection<VirtualEquippedItem> getVirtualEquipmentItems()
+	{
+		return _virtualEquipment.getItems().values();
+	}
+	
+	public int getVirtualItemEnchantLevel(ItemTemplate template, int enchantLevel)
+	{
+		int enchant = enchantLevel;
+		if ((template != null) && isInOlympiadMode())
+		{
+			if (template.isWeapon())
+			{
+				if ((OlympiadConfig.OLYMPIAD_WEAPON_ENCHANT_LIMIT >= 0) && (enchant > OlympiadConfig.OLYMPIAD_WEAPON_ENCHANT_LIMIT))
+				{
+					enchant = OlympiadConfig.OLYMPIAD_WEAPON_ENCHANT_LIMIT;
+				}
+			}
+			else if ((OlympiadConfig.OLYMPIAD_ARMOR_ENCHANT_LIMIT >= 0) && (enchant > OlympiadConfig.OLYMPIAD_ARMOR_ENCHANT_LIMIT))
+			{
+				enchant = OlympiadConfig.OLYMPIAD_ARMOR_ENCHANT_LIMIT;
+			}
+		}
+		
+		return enchant;
+	}
+	
+	public double getVirtualItemStats(Stat stat)
+	{
+		double value = 0;
+		for (VirtualEquippedItem item : _virtualEquipment.getItems().values())
+		{
+			final ItemTemplate template = ItemData.getInstance().getTemplate(item.getItemId());
+			if (template != null)
+			{
+				value += template.getStats(stat, 0);
+			}
+		}
+		
+		return value;
+	}
+	
 	public VirtualEquippedItem getVirtualEquipment(VirtualSlot slot)
 	{
 		return _virtualEquipment.get(slot);
@@ -1537,6 +1580,8 @@ public class Player extends Playable
 		
 		_virtualEquipment.set(slot, item);
 		VirtualEquipmentDAO.getInstance().saveSlot(getObjectId(), slot, item);
+		applyVirtualItemOnEquip(item);
+		refreshVirtualItemEffects(true);
 	}
 	
 	public void setVirtualEquipment(int slotId, int itemId, int enchant, int indexMain, int indexSub)
@@ -1558,8 +1603,15 @@ public class Player extends Playable
 	
 	public void removeVirtualEquipment(VirtualSlot slot)
 	{
+		final VirtualEquippedItem removed = _virtualEquipment.get(slot);
 		_virtualEquipment.remove(slot);
 		VirtualEquipmentDAO.getInstance().deleteSlot(getObjectId(), slot);
+		if (removed != null)
+		{
+			applyVirtualItemOnUnequip(removed);
+		}
+		
+		refreshVirtualItemEffects(true);
 	}
 	
 	public void removeVirtualEquipment(int slotId)
@@ -1569,6 +1621,202 @@ public class Player extends Playable
 		{
 			removeVirtualEquipment(slot);
 		}
+	}
+	
+	private void refreshVirtualItemEffects(boolean broadcast)
+	{
+		applyVirtualItemSkills();
+		getStat().recalculateStats(true);
+		if (broadcast)
+		{
+			broadcastUserInfo(UserInfoType.BASE_STATS, UserInfoType.MAX_HPCPMP, UserInfoType.STATS, UserInfoType.SPEED);
+		}
+	}
+	
+	private void applyVirtualItemOnEquip(VirtualEquippedItem item)
+	{
+		final ItemTemplate template = ItemData.getInstance().getTemplate(item.getItemId());
+		if (template != null)
+		{
+			template.forEachSkill(ItemSkillType.ON_EQUIP, holder ->
+			{
+				final Skill skill = holder.getSkill();
+				if (skill != null)
+				{
+					skill.activateSkill(this, this);
+				}
+			});
+		}
+	}
+	
+	private void applyVirtualItemOnUnequip(VirtualEquippedItem item)
+	{
+		final ItemTemplate template = ItemData.getInstance().getTemplate(item.getItemId());
+		if (template != null)
+		{
+			template.forEachSkill(ItemSkillType.ON_UNEQUIP, holder ->
+			{
+				final Skill skill = holder.getSkill();
+				if (skill != null)
+				{
+					skill.activateSkill(this, this);
+				}
+			});
+		}
+	}
+	
+	private void applyVirtualItemSkills()
+	{
+		final Map<Integer, Skill> desiredSkills = new HashMap<>();
+		for (VirtualEquippedItem item : _virtualEquipment.getItems().values())
+		{
+			final ItemTemplate template = ItemData.getInstance().getTemplate(item.getItemId());
+			if ((template == null) || !template.hasSkills())
+			{
+				continue;
+			}
+			
+			final int enchantLevel = getVirtualItemEnchantLevel(template, item.getEnchant());
+			collectVirtualItemSkills(template, enchantLevel, desiredSkills);
+		}
+		
+		boolean update = false;
+		final Set<Integer> desiredSkillIds = desiredSkills.keySet();
+		for (Integer skillId : new HashSet<>(_virtualItemSkillIds))
+		{
+			if (!desiredSkillIds.contains(skillId) && !isSkillProvidedByEquippedItems(skillId))
+			{
+				final Skill skill = getKnownSkill(skillId);
+				if (skill != null)
+				{
+					removeSkill(skill, false, skill.isPassive());
+					update = true;
+				}
+			}
+		}
+		
+		for (Skill skill : desiredSkills.values())
+		{
+			final Skill knownSkill = getKnownSkill(skill.getId());
+			if ((knownSkill == null) || (knownSkill.getLevel() < skill.getLevel()) || (_virtualItemSkillIds.contains(skill.getId()) && (knownSkill.getLevel() != skill.getLevel())))
+			{
+				if ((knownSkill != null) && _virtualItemSkillIds.contains(skill.getId()))
+				{
+					removeSkill(knownSkill, false, knownSkill.isPassive());
+				}
+				
+				addSkill(skill, false);
+				update = true;
+			}
+		}
+		
+		_virtualItemSkillIds.clear();
+		_virtualItemSkillIds.addAll(desiredSkillIds);
+		
+		if (update)
+		{
+			sendSkillList();
+		}
+	}
+	
+	private void collectVirtualItemSkills(ItemTemplate template, int enchantLevel, Map<Integer, Skill> target)
+	{
+		final List<ItemSkillHolder> normalSkills = template.getSkills(ItemSkillType.NORMAL);
+		if (normalSkills != null)
+		{
+			for (ItemSkillHolder holder : normalSkills)
+			{
+				addVirtualItemSkill(holder, target);
+			}
+		}
+		
+		final List<ItemSkillHolder> enchantSkills = template.getSkills(ItemSkillType.ON_ENCHANT);
+		if (enchantSkills != null)
+		{
+			for (ItemSkillHolder holder : enchantSkills)
+			{
+				if (enchantLevel >= holder.getValue())
+				{
+					addVirtualItemSkill(holder, target);
+				}
+			}
+		}
+	}
+	
+	private void addVirtualItemSkill(ItemSkillHolder holder, Map<Integer, Skill> target)
+	{
+		final Skill skill = holder.getSkill();
+		if (skill == null)
+		{
+			return;
+		}
+		
+		if (skill.isPassive() && !skill.checkConditions(SkillConditionScope.PASSIVE, this, this))
+		{
+			return;
+		}
+		
+		final Skill existing = target.get(skill.getId());
+		if ((existing == null) || (existing.getLevel() < skill.getLevel()))
+		{
+			target.put(skill.getId(), skill);
+		}
+	}
+	
+	private boolean isSkillProvidedByEquippedItems(int skillId)
+	{
+		final Inventory inventory = getInventory();
+		if (inventory == null)
+		{
+			return false;
+		}
+		
+		for (Item item : inventory.getPaperdollItems())
+		{
+			if (itemProvidesSkill(item, skillId))
+			{
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	private boolean itemProvidesSkill(Item item, int skillId)
+	{
+		final ItemTemplate template = item.getTemplate();
+		if (!template.hasSkills())
+		{
+			return false;
+		}
+		
+		final List<ItemSkillHolder> normalSkills = template.getSkills(ItemSkillType.NORMAL);
+		if (normalSkills != null)
+		{
+			for (ItemSkillHolder holder : normalSkills)
+			{
+				if (holder.getSkillId() == skillId)
+				{
+					final Skill skill = holder.getSkill();
+					return (skill != null) && (!skill.isPassive() || skill.checkConditions(SkillConditionScope.PASSIVE, this, this));
+				}
+			}
+		}
+		
+		final List<ItemSkillHolder> enchantSkills = template.getSkills(ItemSkillType.ON_ENCHANT);
+		if (enchantSkills != null)
+		{
+			for (ItemSkillHolder holder : enchantSkills)
+			{
+				if ((holder.getSkillId() == skillId) && (item.getEnchantLevel() >= holder.getValue()))
+				{
+					final Skill skill = holder.getSkill();
+					return (skill != null) && (!skill.isPassive() || skill.checkConditions(SkillConditionScope.PASSIVE, this, this));
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	private void setVirtualPoints(int points, boolean store)
@@ -8126,6 +8374,7 @@ public class Player extends Playable
 		
 		_virtualEquipment.clear();
 		_virtualEquipment.putAll(VirtualEquipmentDAO.getInstance().load(getObjectId()));
+		refreshVirtualItemEffects(false);
 		
 		if (ServerConfig.VIRTUAL_ITEM_DEBUG && !_virtualEquipment.isEmpty())
 		{

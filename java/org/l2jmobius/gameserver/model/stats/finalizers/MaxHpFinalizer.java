@@ -20,9 +20,12 @@ import java.util.OptionalDouble;
 
 import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.data.xml.EnchantItemHPBonusData;
+import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.instance.Pet;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
+import org.l2jmobius.gameserver.model.item.ItemTemplate;
 import org.l2jmobius.gameserver.model.item.Weapon;
 import org.l2jmobius.gameserver.model.item.enums.BodyPart;
 import org.l2jmobius.gameserver.model.item.instance.Item;
@@ -110,6 +113,36 @@ public class MaxHpFinalizer implements IStatFunction
 			{
 				final Weapon weapon = item.getWeaponItem();
 				if (weapon.isDragonWeapon() || weapon.isCursedWeapon())
+				{
+					shouldLiftLimit = true;
+				}
+			}
+		}
+		
+		if (isPlayer)
+		{
+			final Player player = creature.asPlayer();
+			for (VirtualEquippedItem virtualItem : player.getVirtualEquipmentItems())
+			{
+				final ItemTemplate template = ItemData.getInstance().getTemplate(virtualItem.getItemId());
+				if (template == null)
+				{
+					continue;
+				}
+				
+				maxHp += template.getStats(stat, 0);
+				
+				final int enchantLevel = player.getVirtualItemEnchantLevel(template, virtualItem.getEnchant());
+				if (template.isArmor() && (enchantLevel > 0))
+				{
+					final BodyPart bodyPart = template.getBodyPart();
+					if ((bodyPart != BodyPart.NECK) && (bodyPart != BodyPart.LR_EAR) && (bodyPart != BodyPart.LR_FINGER))
+					{
+						maxHp += EnchantItemHPBonusData.getInstance().getHPBonus(template, enchantLevel);
+					}
+				}
+				
+				if (template.isWeapon() && (template instanceof Weapon weapon) && (weapon.isDragonWeapon() || weapon.isCursedWeapon()))
 				{
 					shouldLiftLimit = true;
 				}
