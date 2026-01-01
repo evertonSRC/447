@@ -22,7 +22,9 @@ package org.l2jmobius.gameserver.data.xml;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -32,18 +34,45 @@ import org.w3c.dom.Node;
 
 import org.l2jmobius.commons.util.IXmlReader;
 import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
-import org.l2jmobius.gameserver.data.holders.VirtualItemHolder;
-import org.l2jmobius.gameserver.model.StatSet;
-import org.l2jmobius.gameserver.model.item.ItemTemplate;
+import org.l2jmobius.gameserver.config.ServerConfig;
+import org.l2jmobius.gameserver.data.holders.VirtualItemEntry;
+import org.l2jmobius.gameserver.data.holders.VirtualItemGroup;
 
 /**
- * @author CostyKiller
+ * @author Mobius
  */
 public class VirtualItemData implements IXmlReader
 {
 	private static final Logger LOGGER = Logger.getLogger(VirtualItemData.class.getName());
 	
-	private static final Map<Integer, VirtualItemHolder> VIRTUAL_ITEMS = new HashMap<>();
+	private static final Map<Integer, VirtualItemGroup> VIRTUAL_ITEMS = new HashMap<>();
+	private static final Map<String, Integer> VIRTUAL_SLOT_IDS = new HashMap<>();
+	
+	static
+	{
+		registerVirtualSlot("r_hand_virtual", 1);
+		registerVirtualSlot("l_hand_virtual", 2);
+		registerVirtualSlot("head_virtual", 3);
+		registerVirtualSlot("chest_virtual", 4);
+		registerVirtualSlot("legs_virtual", 5);
+		registerVirtualSlot("gloves_virtual", 6);
+		registerVirtualSlot("feet_virtual", 7);
+		registerVirtualSlot("back_virtual", 8);
+		registerVirtualSlot("hair_virtual", 9);
+		registerVirtualSlot("hair2_virtual", 10);
+		registerVirtualSlot("face_virtual", 11);
+		registerVirtualSlot("underwear_virtual", 12);
+		registerVirtualSlot("belt_virtual", 13);
+		registerVirtualSlot("brooch_virtual", 14);
+		registerVirtualSlot("agathion_virtual", 15);
+		registerVirtualSlot("talisman_virtual", 16);
+		registerVirtualSlot("bracelet_virtual", 17);
+		registerVirtualSlot("ring1_virtual", 18);
+		registerVirtualSlot("ring2_virtual", 19);
+		registerVirtualSlot("ear1_virtual", 20);
+		registerVirtualSlot("ear2_virtual", 21);
+		registerVirtualSlot("neck_virtual", 22);
+	}
 	
 	protected VirtualItemData()
 	{
@@ -65,7 +94,17 @@ public class VirtualItemData implements IXmlReader
 		
 		if (!VIRTUAL_ITEMS.isEmpty())
 		{
-			LOGGER.info(getClass().getSimpleName() + ": Loaded " + VIRTUAL_ITEMS.size() + " virtual items.");
+			int entryCount = 0;
+			for (VirtualItemGroup group : VIRTUAL_ITEMS.values())
+			{
+				entryCount += group.getEntries().size();
+			}
+			
+			LOGGER.info(getClass().getSimpleName() + ": Loaded " + VIRTUAL_ITEMS.size() + " virtual item groups.");
+			if (ServerConfig.VIRTUAL_ITEM_DEBUG)
+			{
+				LOGGER.info(getClass().getSimpleName() + ": Loaded " + entryCount + " virtual item entries.");
+			}
 		}
 		else
 		{
@@ -76,6 +115,7 @@ public class VirtualItemData implements IXmlReader
 	@Override
 	public void parseDocument(Document document, File file)
 	{
+		int entryCount = 0;
 		for (Node n = document.getFirstChild(); n != null; n = n.getNextSibling())
 		{
 			if ("list".equalsIgnoreCase(n.getNodeName()))
@@ -84,87 +124,72 @@ public class VirtualItemData implements IXmlReader
 				{
 					if ("virtualItem".equalsIgnoreCase(d.getNodeName()))
 					{
-						NamedNodeMap attrs = d.getAttributes();
-						Node att;
-						final StatSet set = new StatSet();
-						for (int i = 0; i < attrs.getLength(); i++)
+						final NamedNodeMap attrs = d.getAttributes();
+						final Integer indexMain = parseRequiredInteger(attrs, "indexMain", "virtualItem");
+						if (indexMain == null)
 						{
-							att = attrs.item(i);
-							set.set(att.getNodeName(), att.getNodeValue());
+							continue;
 						}
 						
-						final int indexMain = parseInteger(attrs, "indexMain");
-						int indexSub = 0;
-						long slot = 0;
-						int itemId = 0;
-						int enchant = 0;
-						int costVISPoint = 0;
+						final VirtualItemGroup group = VIRTUAL_ITEMS.computeIfAbsent(indexMain, VirtualItemGroup::new);
 						for (Node b = d.getFirstChild(); b != null; b = b.getNextSibling())
 						{
-							attrs = b.getAttributes();
-							if ("virtualItemStat".equalsIgnoreCase(b.getNodeName()))
+							if (!"virtualItemStat".equalsIgnoreCase(b.getNodeName()))
 							{
-								slot = parseLong(attrs, "slot");
-								indexSub = parseInteger(attrs, "indexSub");
-								itemId = parseInteger(attrs, "itemId");
-								enchant = parseInteger(attrs, "enchant");
-								costVISPoint = parseInteger(attrs, "costVISPoint");
+								continue;
 							}
-						}
-						
-						final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
-						if (itemTemplate != null)
-						{
-							final VirtualItemHolder template = new VirtualItemHolder(indexMain, slot, indexSub, itemId, enchant, costVISPoint);
-							VIRTUAL_ITEMS.put(indexMain, template);
-						}
-						else
-						{
-							LOGGER.warning(getClass().getSimpleName() + ": Could not find item template for id " + itemId);
+							
+							final NamedNodeMap itemAttrs = b.getAttributes();
+							final SlotMapping slotMapping = parseSlot(itemAttrs, indexMain);
+							if (slotMapping == null)
+							{
+								continue;
+							}
+							
+							final Integer indexSub = parseRequiredInteger(itemAttrs, "indexSub", "virtualItemStat(indexMain=" + indexMain + ")");
+							final Integer itemId = parseRequiredInteger(itemAttrs, "itemId", "virtualItemStat(indexMain=" + indexMain + ")");
+							final Integer enchant = parseRequiredInteger(itemAttrs, "enchant", "virtualItemStat(indexMain=" + indexMain + ")");
+							final Integer costVISPoint = parseRequiredInteger(itemAttrs, "costVISPoint", "virtualItemStat(indexMain=" + indexMain + ")");
+							if ((indexSub == null) || (itemId == null) || (enchant == null) || (costVISPoint == null))
+							{
+								continue;
+							}
+							
+							if (group.hasEntry(indexSub))
+							{
+								LOGGER.warning(getClass().getSimpleName() + ": Duplicate virtualItemStat for indexMain=" + indexMain + " indexSub=" + indexSub + ", skipping.");
+								continue;
+							}
+							
+							final VirtualItemEntry entry = new VirtualItemEntry(indexMain, indexSub, slotMapping.slotIdClient, slotMapping.virtualSlotId, slotMapping.slotAlias, itemId, enchant, costVISPoint);
+							group.addEntry(entry);
+							entryCount++;
 						}
 					}
 				}
 			}
 		}
+		
+		if (ServerConfig.VIRTUAL_ITEM_DEBUG)
+		{
+			LOGGER.info(getClass().getSimpleName() + ": Parsed " + entryCount + " virtual item entries from " + file.getName() + ".");
+		}
 	}
 	
-	/**
-	 * Retrieves the virtual item ID associated with a specified virtual item index.
-	 * @param mainIndex the unique index of the virtual item to retrieve the item ID for
-	 * @return the virtual item ID, or {@code 0} if no virtual item is associated with the specified index
-	 */
-	public VirtualItemHolder getVirtualItem(int mainIndex)
+	public VirtualItemGroup getVirtualItemGroup(int mainIndex)
 	{
 		return VIRTUAL_ITEMS.get(mainIndex);
 	}
 	
-	/**
-	 * Retrieves the virtual item ID associated with a specified virtual item index.
-	 * @param mainIndex the unique index of the virtual item to retrieve the item ID for
-	 * @return the virtual item ID, or {@code 0} if no virtual item is associated with the specified index
-	 */
-	public int getVirtualItemId(int mainIndex)
+	public VirtualItemEntry getVirtualItemEntry(int mainIndex, int indexSub)
 	{
-		return VIRTUAL_ITEMS.get(mainIndex).getItemId();
+		final VirtualItemGroup group = VIRTUAL_ITEMS.get(mainIndex);
+		return group != null ? group.getEntry(indexSub) : null;
 	}
 	
-	/**
-	 * Retrieves the virtual item enchant level associated with a specified virtual item ID.
-	 * @param mainIndex the unique ID of the virtual item to retrieve the enchant level for
-	 * @return the enchant level of the virtual item, or {@code 0} if no virtual item is associated with the specified ID
-	 */
-	public int getVirtualItemEnchant(int mainIndex)
+	public Collection<VirtualItemGroup> getVirtualItemGroups()
 	{
-		return VIRTUAL_ITEMS.get(mainIndex).getEnchant();
-	}
-	
-	/**
-	 * Retrieves a collection of all available virtual items data.
-	 * @return a collection of {@code RelicDataHolder} objects representing all virtual items
-	 */
-	public Collection<VirtualItemHolder> getVirtualItems()
-	{
-		return VIRTUAL_ITEMS.values();
+		return Collections.unmodifiableCollection(VIRTUAL_ITEMS.values());
 	}
 	
 	public static VirtualItemData getInstance()
@@ -175,5 +200,78 @@ public class VirtualItemData implements IXmlReader
 	private static class SingletonHolder
 	{
 		protected static final VirtualItemData INSTANCE = new VirtualItemData();
+	}
+	
+	private static void registerVirtualSlot(String alias, int slotId)
+	{
+		VIRTUAL_SLOT_IDS.put(alias.toLowerCase(Locale.ROOT), slotId);
+	}
+	
+	private static SlotMapping parseSlot(NamedNodeMap attributes, int indexMain)
+	{
+		final Node slotNode = attributes.getNamedItem("slot");
+		if (slotNode == null)
+		{
+			LOGGER.warning(VirtualItemData.class.getSimpleName() + ": Missing slot attribute for indexMain=" + indexMain + ".");
+			return null;
+		}
+		
+		final String slotValue = slotNode.getNodeValue().trim();
+		if (slotValue.isEmpty())
+		{
+			LOGGER.warning(VirtualItemData.class.getSimpleName() + ": Empty slot value for indexMain=" + indexMain + ".");
+			return null;
+		}
+		
+		try
+		{
+			return new SlotMapping(Long.parseLong(slotValue), 0, null);
+		}
+		catch (NumberFormatException e)
+		{
+			final String alias = slotValue.toLowerCase(Locale.ROOT);
+			final Integer virtualSlotId = VIRTUAL_SLOT_IDS.get(alias);
+			if (virtualSlotId == null)
+			{
+				LOGGER.warning(VirtualItemData.class.getSimpleName() + ": Unknown slot alias '" + slotValue + "' for indexMain=" + indexMain + ".");
+				return null;
+			}
+			
+			return new SlotMapping(0L, virtualSlotId, alias);
+		}
+	}
+	
+	private static Integer parseRequiredInteger(NamedNodeMap attributes, String name, String context)
+	{
+		final Node node = attributes.getNamedItem(name);
+		if (node == null)
+		{
+			LOGGER.warning(VirtualItemData.class.getSimpleName() + ": Missing " + name + " in " + context + ".");
+			return null;
+		}
+		
+		try
+		{
+			return Integer.decode(node.getNodeValue());
+		}
+		catch (NumberFormatException e)
+		{
+			LOGGER.warning(VirtualItemData.class.getSimpleName() + ": Invalid " + name + " value '" + node.getNodeValue() + "' in " + context + ".");
+			return null;
+		}
+	}
+	
+	private static class SlotMapping
+	{
+		private final long slotIdClient;
+		private final int virtualSlotId;
+		private final String slotAlias;
+		
+		private SlotMapping(long slotIdClient, int virtualSlotId, String slotAlias)
+		{
+			this.slotIdClient = slotIdClient;
+			this.virtualSlotId = virtualSlotId;
+			this.slotAlias = slotAlias;
+		}
 	}
 }

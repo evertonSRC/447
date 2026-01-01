@@ -23,7 +23,7 @@ package org.l2jmobius.gameserver.network.clientpackets.virtualItem;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.data.holders.VirtualItemHolder;
+import org.l2jmobius.gameserver.data.holders.VirtualItemEntry;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.network.SystemMessageId;
 import org.l2jmobius.gameserver.network.clientpackets.ClientPacket;
@@ -44,7 +44,7 @@ public class RequestExVirtualItemSystem extends ClientPacket
 	// private int _costVISPoint;
 	// private int _itemClass;
 	// private int _enchant;
-	private final List<VirtualItemHolder> _updateVisItemInfo = new LinkedList<>();
+	private final List<VirtualItemEntry> _updateVisItemInfo = new LinkedList<>();
 	
 	@Override
 	protected void readImpl()

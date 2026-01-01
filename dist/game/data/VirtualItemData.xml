@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <list xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="xsd/VirtualItemData.xsd">
+	<!-- VIRTUAL SLOT EXAMPLES -->
+	<virtualItem indexMain="1000">
+		<virtualItemStat slot="r_hand_virtual" indexSub="1" itemId="80147" enchant="0" costVISPoint="4" />
+		<virtualItemStat slot="128" indexSub="2" itemId="80147" enchant="1" costVISPoint="1" />
+	</virtualItem>
 	<!-- SKILLS -->
 	<virtualItem indexMain="1"> <!-- XP - Illusory Equipment -->
 		<virtualItemStat slot="0" indexSub="1" itemId="29630" enchant="1" costVISPoint="20" /> <!-- Level 1: Acquired XP/ SP +1% -->

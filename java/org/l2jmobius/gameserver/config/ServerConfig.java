@@ -85,6 +85,7 @@ public class ServerConfig
 	public static String CLAN_NAME_TEMPLATE;
 	public static int MAX_CHARACTERS_NUMBER_PER_ACCOUNT;
 	public static int MAXIMUM_ONLINE_USERS;
+	public static boolean VIRTUAL_ITEM_DEBUG;
 	public static boolean HARDWARE_INFO_ENABLED;
 	public static boolean KICK_MISSING_HWID;
 	public static int MAX_PLAYERS_PER_HWID;
@@ -161,6 +162,7 @@ public class ServerConfig
 		CLAN_NAME_TEMPLATE = config.getString("ClanNameTemplate", ".*");
 		MAX_CHARACTERS_NUMBER_PER_ACCOUNT = config.getInt("CharMaxNumber", 7);
 		MAXIMUM_ONLINE_USERS = config.getInt("MaximumOnlineUsers", 100);
+		VIRTUAL_ITEM_DEBUG = config.getBoolean("VirtualItemDebug", false);
 		HARDWARE_INFO_ENABLED = config.getBoolean("EnableHardwareInfo", false);
 		KICK_MISSING_HWID = config.getBoolean("KickMissingHWID", false);
 		MAX_PLAYERS_PER_HWID = config.getInt("MaxPlayersPerHWID", 0);
