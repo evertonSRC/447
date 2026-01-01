@@ -253,10 +253,19 @@ public class VirtualInventory
 	
 	private void applyVirtualSkill(VirtualItemHolder holder, boolean add, boolean broadcast)
 	{
-		final Skill skill = SkillData.getInstance().getSkill(holder.getItemId(), holder.getEnchant());
+		final SkillData skillData = SkillData.getInstance();
+		final int skillId = holder.getItemId();
+		final int skillLevel = Math.max(holder.getEnchant(), 1);
+		if (skillData.getMaxLevel(skillId) == 0)
+		{
+			LOGGER.warning(getClass().getSimpleName() + ": Missing skill " + skillId + " level " + skillLevel);
+			return;
+		}
+		
+		final Skill skill = skillData.getSkill(skillId, skillLevel);
 		if (skill == null)
 		{
-			LOGGER.warning(getClass().getSimpleName() + ": Missing skill " + holder.getItemId() + " level " + holder.getEnchant());
+			LOGGER.warning(getClass().getSimpleName() + ": Missing skill " + skillId + " level " + skillLevel);
 			return;
 		}
 		
