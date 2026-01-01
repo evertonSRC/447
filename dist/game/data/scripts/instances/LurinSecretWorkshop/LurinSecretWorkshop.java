@@ -21,7 +21,6 @@
 package instances.LurinSecretWorkshop;
 
 import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
 import org.l2jmobius.gameserver.managers.InstanceManager;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.actor.Npc;
@@ -29,7 +28,6 @@ import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.instancezone.Instance;
 import org.l2jmobius.gameserver.model.script.InstanceScript;
 import org.l2jmobius.gameserver.model.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.model.variables.PlayerVariables;
 import org.l2jmobius.gameserver.network.NpcStringId;
 import org.l2jmobius.gameserver.network.SystemMessageId;
 import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
@@ -114,7 +112,6 @@ public class LurinSecretWorkshop extends InstanceScript
 	
 	// Misc
 	private static final int TEMPLATE_ID = 5000;
-	private static final int ILLUSORY_POINTS_REWARD = 30;
 	private static final SkillHolder TRANSFORM_SKILL = new SkillHolder(29608, 1); // Grimnir's Siege Golem
 	// Instance Status
 	private static final int SPAWNING_MONSTERS = 1;
@@ -156,13 +153,6 @@ public class LurinSecretWorkshop extends InstanceScript
 			{
 				htmltext = event;
 				return htmltext;
-			}
-			case "showPoints":
-			{
-				final NpcHtmlMessage html = getNpcHtmlMessage(player, npc, "points.html");
-				html.replace("%points%", player.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, 0));
-				player.sendPacket(html);
-				break;
 			}
 			case "enterInstance":
 			{
@@ -459,12 +449,7 @@ public class LurinSecretWorkshop extends InstanceScript
 			return;
 		}
 		
-		// TODO: Gives player illusory equipment points until daily mission is working.
-		if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_ENABLED)
-		{
-			killer.getVariables().set(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, killer.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, 0) + ILLUSORY_POINTS_REWARD);
-			killer.sendMessage("You received " + ILLUSORY_POINTS_REWARD + " Illusory equipement points.");
-		}
+		// Illusory equipment points are no longer awarded by this instance.
 	}
 	
 	@Override

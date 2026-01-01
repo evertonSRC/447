@@ -138,8 +138,6 @@ public class PlayerVariables extends AbstractVariables
 	public static final String CONQUEST_ABILITY_BATTLE_SOUL_EXP = "CONQUEST_ABILITY_BATTLE_SOUL_EXP";
 	public static final String CONQUEST_ABILITY_BATTLE_SOUL_RESET = "CONQUEST_ABILITY_BATTLE_SOUL_RESET";
 	public static final String CONQUEST_ABILITY_BATTLE_SOUL_UPGRADES = "CONQUEST_ABILITY_BATTLE_SOUL_UPGRADES";
-	public static final String ILLUSORY_POINTS_ACQUIRED = "ILLUSORY_POINTS_ACQUIRED";
-	public static final String ILLUSORY_POINTS_USED = "ILLUSORY_POINTS_USED";
 	public static final String ACTIVE_RELIC = "ACTIVE_RELIC";
 	
 	// Private variables.

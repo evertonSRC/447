@@ -88,7 +88,6 @@ public class ConfigLoader
 		GrandBossConfig.load();
 		HuntPassConfig.load();
 		IdManagerConfig.load();
-		IllusoryEquipmentConfig.load();
 		NpcConfig.load();
 		OlympiadConfig.load();
 		PlayerConfig.load();

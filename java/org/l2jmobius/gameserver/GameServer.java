@@ -132,7 +132,6 @@ import org.l2jmobius.gameserver.data.xml.TeleporterData;
 import org.l2jmobius.gameserver.data.xml.TimedHuntingZoneData;
 import org.l2jmobius.gameserver.data.xml.TransformData;
 import org.l2jmobius.gameserver.data.xml.VariationData;
-import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.geoengine.GeoEngine;
 import org.l2jmobius.gameserver.handler.ConditionHandler;
 import org.l2jmobius.gameserver.handler.DailyMissionHandler;
@@ -305,7 +304,6 @@ public class GameServer
 		CollectionData.getInstance();
 		RelicCollectionData.getInstance();
 		RelicCouponData.getInstance();
-		VirtualItemData.getInstance();
 		RaidDropAnnounceData.getInstance();
 		PcCafePointsManager.getInstance();
 		AppearanceItemData.getInstance();
