@@ -74,6 +74,14 @@ public class PDefenseFinalizer implements IStatFunction
 			
 			if (creature.isPlayer())
 			{
+				for (Item item : creature.asPlayer().getVirtualInventory().getEquippedItems())
+				{
+					baseValue += item.getTemplate().getStats(stat, 0);
+				}
+			}
+			
+			if (creature.isPlayer())
+			{
 				final double armorPhysicalDefence = creature.getStat().getValue(Stat.ARMOR_PHYSICAL_DEFENCE, 0) / 5;
 				final Player player = creature.asPlayer();
 				final Transform transform = creature.getTransformation();

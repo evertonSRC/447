@@ -62,6 +62,14 @@ public class MaxStaminaFinalizer implements IStatFunction
 			{
 				addItem += item.getTemplate().getStats(stat, 0);
 			}
+			
+			if (creature.isPlayer())
+			{
+				for (Item item : creature.asPlayer().getVirtualInventory().getEquippedItems())
+				{
+					addItem += item.getTemplate().getStats(stat, 0);
+				}
+			}
 		}
 		
 		return (mul * baseValue) + add + addItem + creature.getStat().getMoveTypeValue(stat, creature.getMoveType());

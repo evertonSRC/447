@@ -20,6 +20,7 @@ import java.util.OptionalDouble;
 
 import org.l2jmobius.gameserver.config.OlympiadConfig;
 import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.actor.instance.Pet;
 import org.l2jmobius.gameserver.model.actor.transform.Transform;
 import org.l2jmobius.gameserver.model.item.ItemTemplate;
@@ -46,12 +47,22 @@ public interface IStatFunction
 	default double calcEnchantBodyPart(Creature creature, BodyPart... bodyParts)
 	{
 		double value = 0;
+		final Player player = creature.isPlayer() ? creature.asPlayer() : null;
 		for (BodyPart bodyPart : bodyParts)
 		{
 			final Item item = creature.getInventory().getPaperdollItemByBodyPart(bodyPart);
 			if ((item != null) && (item.getEnchantLevel() >= 4) && ((item.getTemplate().getCrystalTypePlus() == CrystalType.R) || (item.getTemplate().getCrystalTypePlus() == CrystalType.L)))
 			{
 				value += calcEnchantBodyPartBonus(item.getEnchantLevel(), item.getTemplate().isBlessed());
+			}
+			
+			if (player != null)
+			{
+				final Item virtualItem = player.getVirtualInventory().getItemByBodyPart(bodyPart);
+				if ((virtualItem != null) && (virtualItem.getEnchantLevel() >= 4) && ((virtualItem.getTemplate().getCrystalTypePlus() == CrystalType.R) || (virtualItem.getTemplate().getCrystalTypePlus() == CrystalType.L)))
+				{
+					value += calcEnchantBodyPartBonus(virtualItem.getEnchantLevel(), virtualItem.getTemplate().isBlessed());
+				}
 			}
 		}
 		
@@ -79,6 +90,12 @@ public interface IStatFunction
 		{
 			final Item weapon = creature.getActiveWeaponInstance();
 			baseValue = (weapon != null ? weapon.getTemplate().getStats(stat, baseTemplateValue) : baseTemplateValue);
+			
+			final Player player = creature.asPlayer();
+			for (Item virtualItem : player.getVirtualInventory().getEquippedItems())
+			{
+				baseValue += virtualItem.getTemplate().getStats(stat, 0);
+			}
 		}
 		
 		return baseValue;
@@ -95,6 +112,11 @@ public interface IStatFunction
 			if (inv != null)
 			{
 				baseValue += inv.getPaperdollCache().getStats(stat);
+			}
+			
+			if (creature.isPlayer())
+			{
+				baseValue += creature.asPlayer().getVirtualInventory().getStats(stat);
 			}
 		}
 		
@@ -118,6 +140,65 @@ public interface IStatFunction
 				(bodyPart == BodyPart.HAIRALL))
 			{
 				// TODO: Item after enchant shows pDef, but scroll says mDef increase.
+				if ((stat != Stat.PHYSICAL_DEFENCE) && (stat != Stat.MAGICAL_DEFENCE))
+				{
+					continue;
+				}
+			}
+			else if (item.getStats(stat, 0) <= 0)
+			{
+				continue;
+			}
+			
+			final double blessedBonus = item.isBlessed() ? 1.5 : 1;
+			int enchant = equippedItem.getEnchantLevel();
+			
+			if (creature.asPlayer().isInOlympiadMode())
+			{
+				if (item.isWeapon())
+				{
+					if ((OlympiadConfig.OLYMPIAD_WEAPON_ENCHANT_LIMIT >= 0) && (enchant > OlympiadConfig.OLYMPIAD_WEAPON_ENCHANT_LIMIT))
+					{
+						enchant = OlympiadConfig.OLYMPIAD_WEAPON_ENCHANT_LIMIT;
+					}
+				}
+				else
+				{
+					if ((OlympiadConfig.OLYMPIAD_ARMOR_ENCHANT_LIMIT >= 0) && (enchant > OlympiadConfig.OLYMPIAD_ARMOR_ENCHANT_LIMIT))
+					{
+						enchant = OlympiadConfig.OLYMPIAD_ARMOR_ENCHANT_LIMIT;
+					}
+				}
+			}
+			
+			if ((stat == Stat.MAGICAL_DEFENCE) || (stat == Stat.PHYSICAL_DEFENCE))
+			{
+				value += calcEnchantDefBonus(equippedItem, blessedBonus, enchant);
+			}
+			else if (stat == Stat.MAGIC_ATTACK)
+			{
+				value += calcEnchantMatkBonus(equippedItem, blessedBonus, enchant);
+			}
+			else if ((stat == Stat.PHYSICAL_ATTACK) && equippedItem.isWeapon())
+			{
+				value += calcEnchantedPAtkBonus(equippedItem, blessedBonus, enchant);
+			}
+		}
+		
+		final Player player = creature.asPlayer();
+		for (Item equippedItem : player.getVirtualInventory().getEquippedItems())
+		{
+			if (!equippedItem.isEnchanted())
+			{
+				continue;
+			}
+			
+			final ItemTemplate item = equippedItem.getTemplate();
+			final BodyPart bodyPart = item.getBodyPart();
+			if ((bodyPart == BodyPart.HAIR) || //
+				(bodyPart == BodyPart.HAIR2) || //
+				(bodyPart == BodyPart.HAIRALL))
+			{
 				if ((stat != Stat.PHYSICAL_DEFENCE) && (stat != Stat.MAGICAL_DEFENCE))
 				{
 					continue;
