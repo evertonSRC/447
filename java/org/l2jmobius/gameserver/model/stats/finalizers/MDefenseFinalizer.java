@@ -67,6 +67,14 @@ public class MDefenseFinalizer implements IStatFunction
 			{
 				baseValue += item.getTemplate().getStats(stat, 0);
 			}
+			
+			if (creature.isPlayer())
+			{
+				for (Item item : creature.asPlayer().getVirtualInventory().getEquippedItems())
+				{
+					baseValue += item.getTemplate().getStats(stat, 0);
+				}
+			}
 		}
 		
 		if (creature.isPlayer())

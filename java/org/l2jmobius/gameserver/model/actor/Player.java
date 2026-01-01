@@ -287,6 +287,7 @@ import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
 import org.l2jmobius.gameserver.model.itemcontainer.ItemContainer;
 import org.l2jmobius.gameserver.model.itemcontainer.PlayerFreight;
 import org.l2jmobius.gameserver.model.itemcontainer.PlayerInventory;
+import org.l2jmobius.gameserver.model.itemcontainer.VirtualInventory;
 import org.l2jmobius.gameserver.model.itemcontainer.PlayerRefund;
 import org.l2jmobius.gameserver.model.itemcontainer.PlayerWarehouse;
 import org.l2jmobius.gameserver.model.krateisCube.KrateiArena;
@@ -560,6 +561,7 @@ public class Player extends Playable
 	private ScheduledFuture<?> _updateAndBroadcastStatusTask;
 	private ScheduledFuture<?> _broadcastCharInfoTask;
 	private ScheduledFuture<?> _broadcastStatusUpdateTask;
+	private final VirtualInventory _virtualInventory = new VirtualInventory(this);
 	
 	private boolean _subclassLock = false;
 	protected int _baseClass;
@@ -3371,6 +3373,11 @@ public class Player extends Playable
 	public PlayerInventory getInventory()
 	{
 		return _inventory;
+	}
+	
+	public VirtualInventory getVirtualInventory()
+	{
+		return _virtualInventory;
 	}
 	
 	/**
@@ -7975,6 +7982,7 @@ public class Player extends Playable
 	{
 		// Retrieve from the database all skills of this Player and add them to _skills.
 		restoreSkills();
+		_virtualInventory.restore();
 		
 		// Retrieve from the database all macroses of this Player and add them to _macros.
 		_macros.restoreMe();

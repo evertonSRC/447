@@ -86,6 +86,29 @@ public class AttributeFinalizer implements IStatFunction
 						}
 					}
 				}
+				
+				if (creature.isPlayer())
+				{
+					for (Item item : creature.asPlayer().getVirtualInventory().getEquippedItems())
+					{
+						if (!item.isArmor())
+						{
+							continue;
+						}
+						
+						final AttributeHolder weaponInstanceHolder = item.getAttribute(_type);
+						if (weaponInstanceHolder != null)
+						{
+							baseValue += weaponInstanceHolder.getValue();
+						}
+						
+						final AttributeHolder weaponHolder = item.getTemplate().getAttribute(_type);
+						if (weaponHolder != null)
+						{
+							baseValue += weaponHolder.getValue();
+						}
+					}
+				}
 			}
 		}
 		

@@ -24,6 +24,8 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
@@ -43,7 +45,7 @@ public class VirtualItemData implements IXmlReader
 {
 	private static final Logger LOGGER = Logger.getLogger(VirtualItemData.class.getName());
 	
-	private static final Map<Integer, VirtualItemHolder> VIRTUAL_ITEMS = new HashMap<>();
+	private static final Map<Integer, Map<Integer, VirtualItemHolder>> VIRTUAL_ITEMS = new HashMap<>();
 	
 	protected VirtualItemData()
 	{
@@ -94,33 +96,28 @@ public class VirtualItemData implements IXmlReader
 						}
 						
 						final int indexMain = parseInteger(attrs, "indexMain");
-						int indexSub = 0;
-						long slot = 0;
-						int itemId = 0;
-						int enchant = 0;
-						int costVISPoint = 0;
 						for (Node b = d.getFirstChild(); b != null; b = b.getNextSibling())
 						{
 							attrs = b.getAttributes();
 							if ("virtualItemStat".equalsIgnoreCase(b.getNodeName()))
 							{
-								slot = parseLong(attrs, "slot");
-								indexSub = parseInteger(attrs, "indexSub");
-								itemId = parseInteger(attrs, "itemId");
-								enchant = parseInteger(attrs, "enchant");
-								costVISPoint = parseInteger(attrs, "costVISPoint");
+								final long slot = parseLong(attrs, "slot");
+								final int indexSub = parseInteger(attrs, "indexSub");
+								final int itemId = parseInteger(attrs, "itemId");
+								final int enchant = parseInteger(attrs, "enchant");
+								final int costVISPoint = parseInteger(attrs, "costVISPoint");
+								
+								final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
+								if (itemTemplate != null)
+								{
+									final VirtualItemHolder template = new VirtualItemHolder(indexMain, slot, indexSub, itemId, enchant, costVISPoint);
+									VIRTUAL_ITEMS.computeIfAbsent(indexMain, key -> new HashMap<>()).put(indexSub, template);
+								}
+								else
+								{
+									LOGGER.warning(getClass().getSimpleName() + ": Could not find item template for id " + itemId);
+								}
 							}
-						}
-						
-						final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
-						if (itemTemplate != null)
-						{
-							final VirtualItemHolder template = new VirtualItemHolder(indexMain, slot, indexSub, itemId, enchant, costVISPoint);
-							VIRTUAL_ITEMS.put(indexMain, template);
-						}
-						else
-						{
-							LOGGER.warning(getClass().getSimpleName() + ": Could not find item template for id " + itemId);
 						}
 					}
 				}
@@ -133,9 +130,15 @@ public class VirtualItemData implements IXmlReader
 	 * @param mainIndex the unique index of the virtual item to retrieve the item ID for
 	 * @return the virtual item ID, or {@code 0} if no virtual item is associated with the specified index
 	 */
-	public VirtualItemHolder getVirtualItem(int mainIndex)
+	public VirtualItemHolder getVirtualItem(int mainIndex, int subIndex)
 	{
-		return VIRTUAL_ITEMS.get(mainIndex);
+		final Map<Integer, VirtualItemHolder> subItems = VIRTUAL_ITEMS.get(mainIndex);
+		if (subItems == null)
+		{
+			return null;
+		}
+		
+		return subItems.get(subIndex);
 	}
 	
 	/**
@@ -143,9 +146,20 @@ public class VirtualItemData implements IXmlReader
 	 * @param mainIndex the unique index of the virtual item to retrieve the item ID for
 	 * @return the virtual item ID, or {@code 0} if no virtual item is associated with the specified index
 	 */
-	public int getVirtualItemId(int mainIndex)
+	public VirtualItemHolder getVirtualItemByItem(int itemId, int enchant, long slot)
 	{
-		return VIRTUAL_ITEMS.get(mainIndex).getItemId();
+		for (Map<Integer, VirtualItemHolder> subItems : VIRTUAL_ITEMS.values())
+		{
+			for (VirtualItemHolder holder : subItems.values())
+			{
+				if ((holder.getItemId() == itemId) && (holder.getEnchant() == enchant) && (holder.getSlot() == slot))
+				{
+					return holder;
+				}
+			}
+		}
+		
+		return null;
 	}
 	
 	/**
@@ -153,18 +167,24 @@ public class VirtualItemData implements IXmlReader
 	 * @param mainIndex the unique ID of the virtual item to retrieve the enchant level for
 	 * @return the enchant level of the virtual item, or {@code 0} if no virtual item is associated with the specified ID
 	 */
-	public int getVirtualItemEnchant(int mainIndex)
-	{
-		return VIRTUAL_ITEMS.get(mainIndex).getEnchant();
-	}
-	
 	/**
 	 * Retrieves a collection of all available virtual items data.
 	 * @return a collection of {@code RelicDataHolder} objects representing all virtual items
 	 */
 	public Collection<VirtualItemHolder> getVirtualItems()
 	{
-		return VIRTUAL_ITEMS.values();
+		return VIRTUAL_ITEMS.values().stream().map(Map::values).flatMap(Collection::stream).filter(Objects::nonNull).collect(Collectors.toList());
+	}
+	
+	public Collection<VirtualItemHolder> getVirtualItems(int mainIndex)
+	{
+		final Map<Integer, VirtualItemHolder> subItems = VIRTUAL_ITEMS.get(mainIndex);
+		if (subItems == null)
+		{
+			return null;
+		}
+		
+		return subItems.values();
 	}
 	
 	public static VirtualItemData getInstance()

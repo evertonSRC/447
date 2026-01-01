@@ -44,6 +44,7 @@ public class BaseStatFinalizer implements IStatFunction
 			
 			// Armor sets calculation
 			baseValue += player.getInventory().getPaperdollCache().getBaseStatValue(player, BaseStat.valueOf(stat));
+			baseValue += player.getVirtualInventory().getStats(stat);
 			
 			// Henna calculation
 			baseValue += player.getHennaValue(BaseStat.valueOf(stat));

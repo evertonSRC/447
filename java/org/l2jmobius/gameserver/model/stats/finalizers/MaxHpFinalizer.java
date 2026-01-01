@@ -116,6 +116,32 @@ public class MaxHpFinalizer implements IStatFunction
 			}
 		}
 		
+		if (creature.isPlayer())
+		{
+			for (Item item : creature.asPlayer().getVirtualInventory().getEquippedItems())
+			{
+				maxHp += item.getTemplate().getStats(stat, 0);
+				
+				if (item.isArmor() && item.isEnchanted())
+				{
+					final BodyPart bodyPart = item.getTemplate().getBodyPart();
+					if ((bodyPart != BodyPart.NECK) && (bodyPart != BodyPart.LR_EAR) && (bodyPart != BodyPart.LR_FINGER))
+					{
+						maxHp += EnchantItemHPBonusData.getInstance().getHPBonus(item);
+					}
+				}
+				
+				if (item.isWeapon())
+				{
+					final Weapon weapon = item.getWeaponItem();
+					if (weapon.isDragonWeapon() || weapon.isCursedWeapon())
+					{
+						shouldLiftLimit = true;
+					}
+				}
+			}
+		}
+		
 		final double hpLimit;
 		if (isPlayer && !shouldLiftLimit && !creature.asPlayer().isCursedWeaponEquipped())
 		{
