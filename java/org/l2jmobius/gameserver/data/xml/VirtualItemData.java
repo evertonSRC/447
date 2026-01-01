@@ -31,9 +31,8 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.commons.util.StringUtil;
 import org.l2jmobius.gameserver.model.item.ItemTemplate;
-import org.l2jmobius.gameserver.model.item.enums.BodyPart;
+import org.l2jmobius.gameserver.model.item.virtual.VirtualSlot;
 import org.l2jmobius.gameserver.model.item.virtual.VirtualItemGroup;
 import org.l2jmobius.gameserver.model.item.virtual.VirtualItemTemplate;
 
@@ -97,8 +96,8 @@ public class VirtualItemData implements IXmlReader
 								}
 								
 								final String slotValue = parseString(itemAttrs, "slot");
-								final long slot = parseVirtualSlot(slotValue);
-								if (slot < 0)
+								final VirtualSlot slot = parseVirtualSlot(slotValue);
+								if (slot == null)
 								{
 									LOGGER.severe(getClass().getSimpleName() + ": Invalid slot " + slotValue + " for indexMain " + indexMain + " indexSub " + indexSub);
 									continue;
@@ -143,26 +142,9 @@ public class VirtualItemData implements IXmlReader
 		}
 	}
 	
-	private long parseVirtualSlot(String slotValue)
+	private VirtualSlot parseVirtualSlot(String slotValue)
 	{
-		if (StringUtil.isNumeric(slotValue))
-		{
-			return Long.parseLong(slotValue);
-		}
-		
-		String normalized = slotValue.toLowerCase();
-		if (normalized.endsWith("_virtual"))
-		{
-			normalized = normalized.substring(0, normalized.length() - "_virtual".length());
-		}
-		
-		BodyPart bodyPart = BodyPart.fromName(normalized);
-		if (bodyPart == null)
-		{
-			bodyPart = BodyPart.fromName(normalized.replace("_", ""));
-		}
-		
-		return bodyPart == null ? -1 : bodyPart.getMask();
+		return VirtualSlot.fromClientSlot(slotValue);
 	}
 	
 	public VirtualItemGroup getByIndexMain(int indexMain)

@@ -969,6 +969,7 @@ public class EnterWorld extends ClientPacket
 		
 		// EnterWorld has finished.
 		player.setEnteredWorld();
+		player.logEmptyVirtualEquipmentSlots();
 		
 		// Wedding checks.
 		if (WeddingConfig.ALLOW_WEDDING)
