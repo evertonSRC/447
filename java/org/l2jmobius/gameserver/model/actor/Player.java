@@ -90,6 +90,7 @@ import org.l2jmobius.gameserver.data.holders.RelicDataHolder;
 import org.l2jmobius.gameserver.data.holders.SellBuffHolder;
 import org.l2jmobius.gameserver.data.holders.TimedHuntingZoneHolder;
 import org.l2jmobius.gameserver.data.holders.TrainingHolder;
+import org.l2jmobius.gameserver.data.holders.VirtualItemEntry;
 import org.l2jmobius.gameserver.data.sql.BaseAttributeBonusTable;
 import org.l2jmobius.gameserver.data.sql.CharInfoTable;
 import org.l2jmobius.gameserver.data.sql.CharSummonTable;
@@ -121,6 +122,7 @@ import org.l2jmobius.gameserver.data.xml.SkillData;
 import org.l2jmobius.gameserver.data.xml.SkillTreeData;
 import org.l2jmobius.gameserver.data.xml.SymbolSealData;
 import org.l2jmobius.gameserver.data.xml.TimedHuntingZoneData;
+import org.l2jmobius.gameserver.data.xml.VirtualItemData;
 import org.l2jmobius.gameserver.geoengine.GeoEngine;
 import org.l2jmobius.gameserver.handler.IItemHandler;
 import org.l2jmobius.gameserver.handler.ItemHandler;
@@ -8390,7 +8392,31 @@ public class Player extends Playable
 		setVirtualPoints(VirtualPointsDAO.getInstance().getPoints(getObjectId()), false);
 		
 		_virtualEquipment.clear();
-		_virtualEquipment.putAll(VirtualEquipmentDAO.getInstance().load(getObjectId()));
+		_virtualItemSkillSources.clear();
+		_virtualItemSkillLevels.clear();
+		for (Entry<VirtualSlot, VirtualEquippedItem> entry : VirtualEquipmentDAO.getInstance().load(getObjectId()).entrySet())
+		{
+			final VirtualSlot slot = entry.getKey();
+			final VirtualEquippedItem item = entry.getValue();
+			if ((slot == null) || (item == null))
+			{
+				continue;
+			}
+			
+			final VirtualItemEntry dataEntry = VirtualItemData.getInstance().getVirtualItemEntry(item.getIndexMain(), item.getIndexSub());
+			final VirtualSlot expectedSlot = dataEntry != null ? VirtualSlot.resolve(0, dataEntry) : null;
+			if ((dataEntry == null) || (expectedSlot == null) || (expectedSlot != slot) || (dataEntry.getCostVISPoint() < 0) || (dataEntry.getItemId() != item.getItemId()))
+			{
+				VirtualEquipmentDAO.getInstance().deleteSlot(getObjectId(), slot);
+				if (ServerConfig.VIRTUAL_ITEM_DEBUG)
+				{
+					LOGGER.warning(getClass().getSimpleName() + ": Removed invalid virtual equipment entry for " + getName() + " slot=" + slot + " indexMain=" + item.getIndexMain() + " indexSub=" + item.getIndexSub() + " itemId=" + item.getItemId() + ".");
+				}
+				continue;
+			}
+			
+			_virtualEquipment.set(slot, item);
+		}
 		refreshVirtualItemEffects(false);
 		
 		if (ServerConfig.VIRTUAL_ITEM_DEBUG && !_virtualEquipment.isEmpty())

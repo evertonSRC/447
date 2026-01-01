@@ -73,6 +73,11 @@ public class RequestExVirtualItemSystem extends ClientPacket
 	@Override
 	protected void runImpl()
 	{
+		if (!getClient().getFloodProtectors().canPerformTransaction())
+		{
+			return;
+		}
+		
 		final Player player = getPlayer();
 		if (player == null)
 		{

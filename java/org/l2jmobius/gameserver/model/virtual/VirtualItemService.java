@@ -70,6 +70,11 @@ public final class VirtualItemService
 		}
 		
 		final int cost = entry.getCostVISPoint();
+		if (cost < 0)
+		{
+			LOGGER.warning("Virtual item equip denied for player " + player.getName() + " (" + player.getObjectId() + ") with invalid cost=" + cost + " entry=" + indexMain + ":" + indexSub + ".");
+			return VirtualItemResult.failure("Custo inválido.");
+		}
 		if (cost > 0)
 		{
 			final int availablePoints = player.getVirtualPoints();
