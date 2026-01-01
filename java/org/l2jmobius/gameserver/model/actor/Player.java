@@ -64,6 +64,7 @@ import org.l2jmobius.gameserver.config.CeremonyOfChaosConfig;
 import org.l2jmobius.gameserver.config.FeatureConfig;
 import org.l2jmobius.gameserver.config.GeneralConfig;
 import org.l2jmobius.gameserver.config.HuntPassConfig;
+import org.l2jmobius.gameserver.config.OlympiadConfig;
 import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.config.PvpConfig;
 import org.l2jmobius.gameserver.config.RatesConfig;
