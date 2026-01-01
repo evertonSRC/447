@@ -487,6 +487,11 @@ public class Player extends Playable
 	private static final String RESTORE_CHARACTER = "SELECT * FROM characters WHERE charId=?";
 	private static final String RESTORE_VIRTUAL_POINTS = "SELECT points FROM character_virtual_points WHERE charId=?";
 	private static final String STORE_VIRTUAL_POINTS = "INSERT INTO character_virtual_points (charId, points) VALUES (?, ?) ON DUPLICATE KEY UPDATE points=?";
+	private static final String RESTORE_VIRTUAL_EQUIPMENT = "SELECT slot, itemId, enchant FROM character_virtual_equipment WHERE charId=?";
+	private static final String STORE_VIRTUAL_EQUIPMENT = "INSERT INTO character_virtual_equipment (charId, slot, itemId, enchant) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE itemId=?, enchant=?";
+	private static final String INSERT_VIRTUAL_EQUIPMENT = "INSERT INTO character_virtual_equipment (charId, slot, itemId, enchant) VALUES (?, ?, ?, ?)";
+	private static final String DELETE_VIRTUAL_EQUIPMENT = "DELETE FROM character_virtual_equipment WHERE charId=? AND slot=?";
+	private static final String DELETE_ALL_VIRTUAL_EQUIPMENT = "DELETE FROM character_virtual_equipment WHERE charId=?";
 	
 	// Character Teleport Bookmark:
 	private static final String INSERT_TP_BOOKMARK = "INSERT INTO character_tpbookmark (charId,Id,x,y,z,icon,tag,name) values (?,?,?,?,?,?,?,?)";
@@ -1580,6 +1585,7 @@ public class Player extends Playable
 		item.setEnchantLevel(enchant);
 		
 		_virtualEquipment.put(slot, new VirtualEquippedItem(itemId, enchant, item));
+		storeVirtualEquipment(slot, itemId, enchant);
 		
 		final Inventory inventory = getInventory();
 		if (inventory != null)
@@ -1615,6 +1621,8 @@ public class Player extends Playable
 		{
 			applyVirtualItemSkills(item, false);
 		}
+		
+		deleteVirtualEquipment(slot);
 		
 		getStat().recalculateStats(true);
 		updateUserInfo();
@@ -8302,6 +8310,9 @@ public class Player extends Playable
 		// Retrieve virtual item points.
 		restoreVirtualPoints();
 		
+		// Retrieve virtual equipment.
+		restoreVirtualEquipment();
+		
 		// Retrieve from the database all teleport bookmark of this Player and add them to _tpbookmark.
 		restoreTeleportBookmark();
 		
@@ -8366,6 +8377,75 @@ public class Player extends Playable
 		{
 			LOGGER.log(Level.WARNING, "Could not restore virtual points for " + getName() + ": " + e.getMessage(), e);
 		}
+	}
+	
+	private void restoreVirtualEquipment()
+	{
+		boolean needsRecalculation = false;
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(RESTORE_VIRTUAL_EQUIPMENT))
+		{
+			statement.setInt(1, getObjectId());
+			try (ResultSet rset = statement.executeQuery())
+			{
+				while (rset.next())
+				{
+					final int slotId = rset.getInt("slot");
+					final VirtualSlot slot = VirtualSlot.fromClientSlot(slotId);
+					if (slot == null)
+					{
+						LOGGER.warning("Unknown virtual slot " + slotId + " while restoring virtual equipment for " + getName());
+						continue;
+					}
+					
+					final int itemId = rset.getInt("itemId");
+					final int enchant = rset.getInt("enchant");
+					if (VirtualItemData.getInstance().getTemplate(slot, itemId, enchant) == null)
+					{
+						LOGGER.warning("Virtual item not found in catalog for slot " + slot.getClientSlotName() + " itemId " + itemId + " enchant " + enchant + " on " + getName());
+						continue;
+					}
+					
+					if (applyRestoredVirtualEquipment(slot, itemId, enchant))
+					{
+						needsRecalculation = true;
+					}
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Could not restore virtual equipment for " + getName() + ": " + e.getMessage(), e);
+		}
+		
+		if (needsRecalculation)
+		{
+			getStat().recalculateStats(true);
+		}
+	}
+	
+	private boolean applyRestoredVirtualEquipment(VirtualSlot slot, int itemId, int enchant)
+	{
+		if (slot == null)
+		{
+			return false;
+		}
+		
+		final Item item = new Item(itemId);
+		item.setVirtual(true);
+		item.setEnchantLevel(enchant);
+		
+		_virtualEquipment.put(slot, new VirtualEquippedItem(itemId, enchant, item));
+		
+		final Inventory inventory = getInventory();
+		if (inventory != null)
+		{
+			inventory.getPaperdollCache().getPaperdollItems().add(item);
+			inventory.getPaperdollCache().clearCachedStats();
+		}
+		
+		applyVirtualItemSkills(item, true);
+		return true;
 	}
 	
 	/**
@@ -8502,6 +8582,7 @@ public class Player extends Playable
 		storeCharBase();
 		storeCharSub();
 		storeVirtualPoints();
+		storeVirtualEquipment();
 		storeEffect(storeActiveEffects);
 		storeItemReuseDelay();
 		if (PlayerConfig.STORE_RECIPE_SHOPLIST)
@@ -8678,6 +8759,81 @@ public class Player extends Playable
 		catch (Exception e)
 		{
 			LOGGER.log(Level.WARNING, "Could not store virtual points for " + getName() + ": " + e.getMessage(), e);
+		}
+	}
+	
+	private void storeVirtualEquipment(VirtualSlot slot, int itemId, int enchant)
+	{
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(STORE_VIRTUAL_EQUIPMENT))
+		{
+			statement.setInt(1, getObjectId());
+			statement.setInt(2, slot.getClientSlotId());
+			statement.setInt(3, itemId);
+			statement.setInt(4, enchant);
+			statement.setInt(5, itemId);
+			statement.setInt(6, enchant);
+			statement.execute();
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Could not store virtual equipment for " + getName() + ": " + e.getMessage(), e);
+		}
+	}
+	
+	private void deleteVirtualEquipment(VirtualSlot slot)
+	{
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(DELETE_VIRTUAL_EQUIPMENT))
+		{
+			statement.setInt(1, getObjectId());
+			statement.setInt(2, slot.getClientSlotId());
+			statement.execute();
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Could not delete virtual equipment for " + getName() + ": " + e.getMessage(), e);
+		}
+	}
+	
+	private void storeVirtualEquipment()
+	{
+		try (Connection con = DatabaseFactory.getConnection())
+		{
+			try (PreparedStatement deleteStatement = con.prepareStatement(DELETE_ALL_VIRTUAL_EQUIPMENT))
+			{
+				deleteStatement.setInt(1, getObjectId());
+				deleteStatement.execute();
+			}
+			
+			if (_virtualEquipment.isEmpty())
+			{
+				return;
+			}
+			
+			try (PreparedStatement insertStatement = con.prepareStatement(INSERT_VIRTUAL_EQUIPMENT))
+			{
+				for (Map.Entry<VirtualSlot, VirtualEquippedItem> entry : _virtualEquipment.entrySet())
+				{
+					final VirtualEquippedItem equippedItem = entry.getValue();
+					if (equippedItem == null)
+					{
+						continue;
+					}
+					
+					insertStatement.setInt(1, getObjectId());
+					insertStatement.setInt(2, entry.getKey().getClientSlotId());
+					insertStatement.setInt(3, equippedItem.getItemId());
+					insertStatement.setInt(4, equippedItem.getEnchant());
+					insertStatement.addBatch();
+				}
+				
+				insertStatement.executeBatch();
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Could not store virtual equipment for " + getName() + ": " + e.getMessage(), e);
 		}
 	}
 	
