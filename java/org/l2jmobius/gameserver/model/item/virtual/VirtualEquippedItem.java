@@ -27,11 +27,13 @@ public class VirtualEquippedItem
 {
 	private final int _itemId;
 	private final int _enchantLevel;
+	private final org.l2jmobius.gameserver.model.item.instance.Item _item;
 	
-	public VirtualEquippedItem(int itemId, int enchantLevel)
+	public VirtualEquippedItem(int itemId, int enchantLevel, org.l2jmobius.gameserver.model.item.instance.Item item)
 	{
 		_itemId = itemId;
 		_enchantLevel = enchantLevel;
+		_item = item;
 	}
 	
 	public int getItemId()
@@ -42,5 +44,10 @@ public class VirtualEquippedItem
 	public int getEnchantLevel()
 	{
 		return _enchantLevel;
+	}
+	
+	public org.l2jmobius.gameserver.model.item.instance.Item getItem()
+	{
+		return _item;
 	}
 }

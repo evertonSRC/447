@@ -152,6 +152,22 @@ public class VirtualItemData implements IXmlReader
 		return _groups.get(indexMain);
 	}
 	
+	public VirtualItemTemplate getTemplate(VirtualSlot slot, int itemId, int enchant, int costVISPoint)
+	{
+		for (VirtualItemGroup group : _groups.values())
+		{
+			for (VirtualItemTemplate template : group.getTemplates())
+			{
+				if ((template.getSlot() == slot) && (template.getItemId() == itemId) && (template.getEnchant() == enchant) && (template.getCostVISPoint() == costVISPoint))
+				{
+					return template;
+				}
+			}
+		}
+		
+		return null;
+	}
+	
 	private int getVirtualItemCount()
 	{
 		int count = 0;
