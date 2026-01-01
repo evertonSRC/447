@@ -71,6 +71,12 @@ public class RequestExVirtualItemSystem extends ClientPacket
 		{
 			return;
 		}
+
+		if (((_action == ACTION_EQUIP) || (_action == ACTION_UNEQUIP)) && !player.canPerformVirtualEquipmentAction())
+		{
+			player.sendMessage("Please wait before changing virtual equipment again.");
+			return;
+		}
 		
 		switch (_action)
 		{
@@ -82,9 +88,15 @@ public class RequestExVirtualItemSystem extends ClientPacket
 			case ACTION_UNEQUIP:
 			{
 				final VirtualSlot slot = resolveSlot(_slotId);
-				if (slot != null)
+				if (slot == null)
 				{
-					player.unequipVirtual(slot);
+					player.sendMessage("Invalid virtual slot.");
+					break;
+				}
+				
+				if (!player.unequipVirtual(slot))
+				{
+					player.sendMessage("No virtual item equipped in that slot.");
 				}
 				break;
 			}

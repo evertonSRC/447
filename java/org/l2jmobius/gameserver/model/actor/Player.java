@@ -541,9 +541,11 @@ public class Player extends Playable
 	public static final int ID_NONE = -1;
 	
 	public static final int REQUEST_TIMEOUT = 15;
+	private static final long VIRTUAL_EQUIPMENT_ACTION_COOLDOWN_MS = 300;
 	
 	private int _pcCafePoints = 0;
 	private int _virtualPoints = 0;
+	private long _lastVirtualEquipmentAction = 0;
 	
 	private GameClient _client;
 	private String _ip = "N/A";
@@ -1527,6 +1529,18 @@ public class Player extends Playable
 		
 		LOGGER.fine("Player " + getName() + " empty virtual equipment slots: " + String.join(", ", emptySlots));
 	}
+
+	public boolean canPerformVirtualEquipmentAction()
+	{
+		final long now = System.currentTimeMillis();
+		if ((now - _lastVirtualEquipmentAction) < VIRTUAL_EQUIPMENT_ACTION_COOLDOWN_MS)
+		{
+			return false;
+		}
+
+		_lastVirtualEquipmentAction = now;
+		return true;
+	}
 	
 	public boolean equipVirtualFromCatalog(int indexMain, int indexSub)
 	{
@@ -1561,6 +1575,18 @@ public class Player extends Playable
 		if (VirtualItemData.getInstance().getTemplate(slot, itemId, enchant, cost) == null)
 		{
 			sendMessage("Virtual item not found in catalog.");
+			return false;
+		}
+
+		final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
+		if (itemTemplate == null)
+		{
+			sendMessage("Virtual item template not found.");
+			return false;
+		}
+
+		if (!isVirtualItemSlotAllowed(slot, itemTemplate))
+		{
 			return false;
 		}
 		
@@ -1598,6 +1624,7 @@ public class Player extends Playable
 		getStat().recalculateStats(true);
 		updateUserInfo();
 		broadcastStatusUpdate(this);
+		LOGGER.info("Player " + getName() + " equipped virtual item " + itemId + " (enchant " + enchant + ") in slot " + slot.getClientSlotName() + " costing " + cost + " VIS points.");
 		return true;
 	}
 	
@@ -1627,7 +1654,38 @@ public class Player extends Playable
 		getStat().recalculateStats(true);
 		updateUserInfo();
 		broadcastStatusUpdate(this);
+		LOGGER.info("Player " + getName() + " unequipped virtual item " + equippedItem.getItemId() + " (enchant " + equippedItem.getEnchant() + ") from slot " + slot.getClientSlotName() + ".");
 		return true;
+	}
+
+	private boolean isVirtualItemSlotAllowed(VirtualSlot slot, ItemTemplate itemTemplate)
+	{
+		final BodyPart itemBodyPart = itemTemplate.getBodyPart();
+		if ((itemBodyPart == null) || (itemBodyPart == BodyPart.NONE))
+		{
+			sendMessage("Virtual item cannot be equipped.");
+			return false;
+		}
+
+		final BodyPart slotBodyPart = BodyPart.fromPaperdollSlot(slot.getClientSlotId());
+		if (slotBodyPart == null)
+		{
+			sendMessage("Invalid virtual slot.");
+			return false;
+		}
+
+		if (BodyPart.getPaperdollIndex(itemBodyPart) == slot.getClientSlotId())
+		{
+			return true;
+		}
+
+		if ((itemBodyPart.getMask() & slotBodyPart.getMask()) != 0)
+		{
+			return true;
+		}
+
+		sendMessage("Virtual item slot does not match the item template.");
+		return false;
 	}
 	
 	private void applyVirtualItemSkills(Item item, boolean equip)
@@ -15307,8 +15365,10 @@ public class Player extends Playable
 		{
 			return;
 		}
-		
+
+		final int before = _virtualPoints;
 		setVirtualPoints(_virtualPoints - points);
+		LOGGER.info("Player " + getName() + " consumed " + points + " VIS points (before " + before + ", after " + _virtualPoints + ").");
 	}
 	
 	private void setVirtualPointsInternal(int points)
