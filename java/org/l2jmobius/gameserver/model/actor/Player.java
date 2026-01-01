@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -275,6 +276,8 @@ import org.l2jmobius.gameserver.model.item.enums.BroochJewel;
 import org.l2jmobius.gameserver.model.item.enums.ItemGrade;
 import org.l2jmobius.gameserver.model.item.enums.ItemLocation;
 import org.l2jmobius.gameserver.model.item.enums.ItemProcessType;
+import org.l2jmobius.gameserver.model.item.virtual.VirtualEquippedItem;
+import org.l2jmobius.gameserver.model.item.virtual.VirtualSlot;
 import org.l2jmobius.gameserver.model.item.holders.ItemHolder;
 import org.l2jmobius.gameserver.model.item.holders.ItemSkillHolder;
 import org.l2jmobius.gameserver.model.item.instance.Item;
@@ -704,6 +707,8 @@ public class Player extends Playable
 	private String _storeName = "";
 	private TradeList _sellList;
 	private TradeList _buyList;
+	
+	private final Map<VirtualSlot, VirtualEquippedItem> _virtualEquipment = new EnumMap<>(VirtualSlot.class);
 	
 	// Multisell
 	private PreparedMultisellListHolder _currentMultiSell = null;
@@ -1484,6 +1489,30 @@ public class Player extends Playable
 	public HuntPass getHuntPass()
 	{
 		return _huntPass;
+	}
+	
+	public Map<VirtualSlot, VirtualEquippedItem> getVirtualEquipment()
+	{
+		return _virtualEquipment;
+	}
+	
+	public void logEmptyVirtualEquipmentSlots()
+	{
+		if (!LOGGER.isLoggable(Level.FINE))
+		{
+			return;
+		}
+		
+		final List<String> emptySlots = new ArrayList<>();
+		for (VirtualSlot slot : VirtualSlot.values())
+		{
+			if (_virtualEquipment.get(slot) == null)
+			{
+				emptySlots.add(slot.getClientSlotName());
+			}
+		}
+		
+		LOGGER.fine("Player " + getName() + " empty virtual equipment slots: " + String.join(", ", emptySlots));
 	}
 	
 	public Collection<RankingHistoryDataHolder> getRankingHistoryData()

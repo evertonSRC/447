@@ -21,33 +21,17 @@
 package org.l2jmobius.gameserver.model.item.virtual;
 
 /**
- * @author Mobius
+ * Lightweight holder for virtual equipped items.
  */
-public class VirtualItemTemplate
+public class VirtualEquippedItem
 {
-	private final int _indexSub;
-	private final VirtualSlot _slot;
 	private final int _itemId;
-	private final int _enchant;
-	private final int _costVISPoint;
+	private final int _enchantLevel;
 	
-	public VirtualItemTemplate(int indexSub, VirtualSlot slot, int itemId, int enchant, int costVISPoint)
+	public VirtualEquippedItem(int itemId, int enchantLevel)
 	{
-		_indexSub = indexSub;
-		_slot = slot;
 		_itemId = itemId;
-		_enchant = enchant;
-		_costVISPoint = costVISPoint;
-	}
-	
-	public int getIndexSub()
-	{
-		return _indexSub;
-	}
-	
-	public VirtualSlot getSlot()
-	{
-		return _slot;
+		_enchantLevel = enchantLevel;
 	}
 	
 	public int getItemId()
@@ -55,13 +39,8 @@ public class VirtualItemTemplate
 		return _itemId;
 	}
 	
-	public int getEnchant()
+	public int getEnchantLevel()
 	{
-		return _enchant;
-	}
-	
-	public int getCostVISPoint()
-	{
-		return _costVISPoint;
+		return _enchantLevel;
 	}
 }
