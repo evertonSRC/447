@@ -138,6 +138,18 @@ public class VirtualItemData implements IXmlReader
 								continue;
 							}
 							
+							if (costVISPoint < 0)
+							{
+								LOGGER.warning(getClass().getSimpleName() + ": Negative costVISPoint for indexMain=" + indexMain + " indexSub=" + indexSub + ", skipping.");
+								continue;
+							}
+							
+							if (itemId <= 0)
+							{
+								LOGGER.warning(getClass().getSimpleName() + ": Invalid itemId for indexMain=" + indexMain + " indexSub=" + indexSub + ", skipping.");
+								continue;
+							}
+							
 							if (group.hasEntry(indexSub))
 							{
 								LOGGER.warning(getClass().getSimpleName() + ": Duplicate virtualItemStat for indexMain=" + indexMain + " indexSub=" + indexSub + ", skipping.");
