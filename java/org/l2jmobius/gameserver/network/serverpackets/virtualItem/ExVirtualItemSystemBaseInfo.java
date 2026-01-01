@@ -22,7 +22,6 @@ package org.l2jmobius.gameserver.network.serverpackets.virtualItem;
 
 import org.l2jmobius.commons.network.WritableBuffer;
 import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
-import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.variables.PlayerVariables;
 import org.l2jmobius.gameserver.network.GameClient;
@@ -37,24 +36,23 @@ public class ExVirtualItemSystemBaseInfo extends ServerPacket
 	private final Player _player;
 	private final int _illusoryPointsAcquired;
 	private final int _illusoryPointsUsed;
-	private final long _virtualItemEventStart = GlobalVariablesManager.getInstance().getLong("VIRTUAL_ITEM_EVENT_START", 0); // Event starting time
-	private final long _virtualItemEventEnd;
+	private final int _virtualItemEventEnd;
 	
 	public ExVirtualItemSystemBaseInfo(Player player)
 	{
 		_player = player;
 		_illusoryPointsAcquired = _player.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, 0);
 		_illusoryPointsUsed = _player.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_USED, 0);
-		
-		// Event ending time ((start time + (2592000000L * config interval)) - current time).
-		_virtualItemEventEnd = (((_virtualItemEventStart + (2592000000L * IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DURATION)) - System.currentTimeMillis()) / 1000);
+
+		// Event is permanent while enabled. Use a large value so client keeps the UI available.
+		_virtualItemEventEnd = Integer.MAX_VALUE;
 	}
 	
 	@Override
 	public void writeImpl(GameClient client, WritableBuffer buffer)
 	{
 		ServerPackets.EX_VIRTUALITEM_SYSTEM_BASE_INFO.writeId(this, buffer);
-		buffer.writeInt((int) _virtualItemEventEnd);
+		buffer.writeInt(_virtualItemEventEnd);
 		buffer.writeInt(_illusoryPointsAcquired); // Total Illusory Points acquired
 		buffer.writeInt(_illusoryPointsUsed); // Total Illusory Points used
 		buffer.writeInt(IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT); // max available points default 600

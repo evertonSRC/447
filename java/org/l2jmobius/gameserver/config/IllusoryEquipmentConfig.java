@@ -33,6 +33,10 @@ public class IllusoryEquipmentConfig
 	
 	// Constants
 	public static boolean ILLUSORY_EQUIPMENT_ENABLED;
+	/**
+	 * Kept for backwards compatibility with existing configs. Duration is ignored because the
+	 * event is permanent while enabled.
+	 */
 	public static int ILLUSORY_EQUIPMENT_EVENT_DURATION;
 	public static boolean ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED;
 	public static int ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT;
@@ -40,8 +44,8 @@ public class IllusoryEquipmentConfig
 	public static void load()
 	{
 		final ConfigReader config = new ConfigReader(ILLUSORY_EQUIPMENT_CONFIG_FILE);
-		ILLUSORY_EQUIPMENT_ENABLED = config.getBoolean("Enabled", false);
-		ILLUSORY_EQUIPMENT_EVENT_DURATION = config.getInt("Duration", 5);
+		ILLUSORY_EQUIPMENT_ENABLED = config.getBoolean("Enabled", true);
+		ILLUSORY_EQUIPMENT_EVENT_DURATION = config.getInt("Duration", 5); // Intentionally ignored.
 		ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED = config.getBoolean("Debug", false);
 		ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT = config.getInt("PointsLimit", 600);
 	}
