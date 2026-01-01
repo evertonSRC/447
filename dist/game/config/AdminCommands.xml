@@ -484,6 +484,9 @@
 
 	<!-- ADMIN PRIME POINTS -->
 	<admin command="primepoints" description="Manage prime points." accessLevel="100" />
+	
+	<!-- ADMIN VIS POINTS -->
+	<admin command="vispoints" description="Manage VIS points." accessLevel="100" />
 
 	<!-- PREMIUM SYSTEM -->
 	<admin command="premium_menu" description="Opens the Premium Service Manager interface." accessLevel="100" />

@@ -480,6 +480,8 @@ public class Player extends Playable
 	private static final String UPDATE_CHARACTER_WITH_STAMINA = "UPDATE characters SET level=?,maxHp=?,curHp=?,maxCp=?,curCp=?,maxMp=?,curMp=?,face=?,hairStyle=?,hairColor=?,sex=?,heading=?,x=?,y=?,z=?,exp=?,expBeforeDeath=?,sp=?,reputation=?,fame=?,raidbossPoints=?,pvpkills=?,pkkills=?,clanid=?,race=?,classid=?,deletetime=?,title=?,title_color=?,online=?,clan_privs=?,wantspeace=?,base_class=?,onlinetime=?,nobless=?,power_grade=?,subpledge=?,lvl_joined_academy=?,apprentice=?,sponsor=?,clan_join_expiry_time=?,clan_create_expiry_time=?,char_name=?,bookmarkslot=?,vitality_points=?,current_stamina=?,language=?,faction=?,pccafe_points=?,kills=?,deaths=? WHERE charId=?";
 	private static final String UPDATE_CHARACTER_ACCESS = "UPDATE characters SET accesslevel = ? WHERE charId = ?";
 	private static final String RESTORE_CHARACTER = "SELECT * FROM characters WHERE charId=?";
+	private static final String RESTORE_VIRTUAL_POINTS = "SELECT points FROM character_virtual_points WHERE charId=?";
+	private static final String STORE_VIRTUAL_POINTS = "INSERT INTO character_virtual_points (charId, points) VALUES (?, ?) ON DUPLICATE KEY UPDATE points=?";
 	
 	// Character Teleport Bookmark:
 	private static final String INSERT_TP_BOOKMARK = "INSERT INTO character_tpbookmark (charId,Id,x,y,z,icon,tag,name) values (?,?,?,?,?,?,?,?)";
@@ -531,6 +533,7 @@ public class Player extends Playable
 	public static final int REQUEST_TIMEOUT = 15;
 	
 	private int _pcCafePoints = 0;
+	private int _virtualPoints = 0;
 	
 	private GameClient _client;
 	private String _ip = "N/A";
@@ -8014,6 +8017,9 @@ public class Player extends Playable
 		// Retrieve base attribute bonuses.
 		restoreBaseAttributeBonuses();
 		
+		// Retrieve virtual item points.
+		restoreVirtualPoints();
+		
 		// Retrieve from the database all teleport bookmark of this Player and add them to _tpbookmark.
 		restoreTeleportBookmark();
 		
@@ -8054,6 +8060,30 @@ public class Player extends Playable
 		final BaseAttributeBonusHolder[] bonuses = BaseAttributeBonusTable.getInstance().loadBonuses(getObjectId());
 		_baseAttributeBonusMain.copyFrom(bonuses[0]);
 		_baseAttributeBonusDual.copyFrom(bonuses[1]);
+	}
+	
+	private void restoreVirtualPoints()
+	{
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(RESTORE_VIRTUAL_POINTS))
+		{
+			statement.setInt(1, getObjectId());
+			try (ResultSet rset = statement.executeQuery())
+			{
+				if (rset.next())
+				{
+					setVirtualPointsInternal(rset.getInt("points"));
+				}
+				else
+				{
+					setVirtualPointsInternal(0);
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Could not restore virtual points for " + getName() + ": " + e.getMessage(), e);
+		}
 	}
 	
 	/**
@@ -8189,6 +8219,7 @@ public class Player extends Playable
 	{
 		storeCharBase();
 		storeCharSub();
+		storeVirtualPoints();
 		storeEffect(storeActiveEffects);
 		storeItemReuseDelay();
 		if (PlayerConfig.STORE_RECIPE_SHOPLIST)
@@ -8349,6 +8380,22 @@ public class Player extends Playable
 		catch (Exception e)
 		{
 			LOGGER.log(Level.WARNING, "Could not store sub class data for " + getName() + ": " + e.getMessage(), e);
+		}
+	}
+	
+	private void storeVirtualPoints()
+	{
+		try (Connection con = DatabaseFactory.getConnection();
+			PreparedStatement statement = con.prepareStatement(STORE_VIRTUAL_POINTS))
+		{
+			statement.setInt(1, getObjectId());
+			statement.setInt(2, _virtualPoints);
+			statement.setInt(3, _virtualPoints);
+			statement.execute();
+		}
+		catch (Exception e)
+		{
+			LOGGER.log(Level.WARNING, "Could not store virtual points for " + getName() + ": " + e.getMessage(), e);
 		}
 	}
 	
@@ -14787,6 +14834,48 @@ public class Player extends Playable
 	public void setPcCafePoints(int count)
 	{
 		_pcCafePoints = count < PremiumSystemConfig.PC_CAFE_MAX_POINTS ? count : PremiumSystemConfig.PC_CAFE_MAX_POINTS;
+	}
+	
+	public int getVirtualPoints()
+	{
+		return _virtualPoints;
+	}
+	
+	public void setVirtualPoints(int points)
+	{
+		final int newPoints = Math.max(points, 0);
+		if (_virtualPoints == newPoints)
+		{
+			return;
+		}
+		
+		_virtualPoints = newPoints;
+		storeVirtualPoints();
+	}
+	
+	public void addVirtualPoints(int points)
+	{
+		if (points == 0)
+		{
+			return;
+		}
+		
+		setVirtualPoints(_virtualPoints + points);
+	}
+	
+	public void removeVirtualPoints(int points)
+	{
+		if (points <= 0)
+		{
+			return;
+		}
+		
+		setVirtualPoints(_virtualPoints - points);
+	}
+	
+	private void setVirtualPointsInternal(int points)
+	{
+		_virtualPoints = Math.max(points, 0);
 	}
 	
 	public long getHonorCoins()
