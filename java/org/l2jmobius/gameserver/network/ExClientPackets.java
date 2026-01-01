@@ -234,6 +234,9 @@ import org.l2jmobius.gameserver.network.clientpackets.relics.RequestRelicsOpenUI
 import org.l2jmobius.gameserver.network.clientpackets.relics.RequestRelicsSummon;
 import org.l2jmobius.gameserver.network.clientpackets.relics.RequestRelicsSummonCloseUI;
 import org.l2jmobius.gameserver.network.clientpackets.relics.RequestRelicsUpgrade;
+import org.l2jmobius.gameserver.network.clientpackets.virtualitem.RequestExVirtualItemSystem;
+import org.l2jmobius.gameserver.network.clientpackets.virtualitem.RequestExVirtualItemSystemBaseInfo;
+import org.l2jmobius.gameserver.network.clientpackets.virtualitem.RequestExVirtualItemSystemPointInfo;
 import org.l2jmobius.gameserver.network.clientpackets.sayune.RequestFlyMove;
 import org.l2jmobius.gameserver.network.clientpackets.sayune.RequestFlyMoveStart;
 import org.l2jmobius.gameserver.network.clientpackets.secretshop.ExRequestFestivalBmGame;
@@ -944,7 +947,10 @@ public enum ExClientPackets
 	EX_SERVERWAR_REWARD_INFO(0x294, null, ConnectionState.IN_GAME),
 	EX_SERVERWAR_GET_REWARD(0x295, null, ConnectionState.IN_GAME),
 	EX_RELICS_COMBINATION_COMPLETE(0x296, RequestRelicsCombinationComplete::new, ConnectionState.IN_GAME),
-	EX_MAX(0x298, null, ConnectionState.IN_GAME);
+	EX_VIRTUALITEM_SYSTEM_BASE_INFO(0x370, RequestExVirtualItemSystemBaseInfo::new, ConnectionState.IN_GAME),
+	EX_VIRTUALITEM_SYSTEM(0x371, RequestExVirtualItemSystem::new, ConnectionState.IN_GAME),
+	EX_VIRTUALITEM_SYSTEM_POINT_INFO(0x372, RequestExVirtualItemSystemPointInfo::new, ConnectionState.IN_GAME),
+	EX_MAX(0x374, null, ConnectionState.IN_GAME);
 	
 	public static final ExClientPackets[] PACKET_ARRAY;
 	static
