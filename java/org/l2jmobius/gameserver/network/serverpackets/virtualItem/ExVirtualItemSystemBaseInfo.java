@@ -24,7 +24,6 @@ import org.l2jmobius.commons.network.WritableBuffer;
 import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
 import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
 import org.l2jmobius.gameserver.model.actor.Player;
-import org.l2jmobius.gameserver.model.variables.PlayerVariables;
 import org.l2jmobius.gameserver.network.GameClient;
 import org.l2jmobius.gameserver.network.ServerPackets;
 import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
@@ -43,8 +42,8 @@ public class ExVirtualItemSystemBaseInfo extends ServerPacket
 	public ExVirtualItemSystemBaseInfo(Player player)
 	{
 		_player = player;
-		_illusoryPointsAcquired = _player.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, 0);
-		_illusoryPointsUsed = _player.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_USED, 0);
+		_illusoryPointsAcquired = _player.getVirtualPoints();
+		_illusoryPointsUsed = 0;
 		
 		// Event ending time ((start time + (2592000000L * config interval)) - current time).
 		_virtualItemEventEnd = (((_virtualItemEventStart + (2592000000L * IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DURATION)) - System.currentTimeMillis()) / 1000);

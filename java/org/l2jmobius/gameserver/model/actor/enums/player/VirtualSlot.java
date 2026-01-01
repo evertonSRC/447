@@ -91,6 +91,11 @@ public enum VirtualSlot
 	{
 		return _alias;
 	}
+
+	public long getClientSlotId()
+	{
+		return (_bodyPart != null) ? _bodyPart.getMask() : _id;
+	}
 	
 	public static VirtualSlot fromId(int id)
 	{
