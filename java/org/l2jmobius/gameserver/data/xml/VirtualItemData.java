@@ -21,6 +21,8 @@
 package org.l2jmobius.gameserver.data.xml;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -150,6 +152,11 @@ public class VirtualItemData implements IXmlReader
 	public VirtualItemGroup getByIndexMain(int indexMain)
 	{
 		return _groups.get(indexMain);
+	}
+
+	public Collection<VirtualItemGroup> getGroups()
+	{
+		return Collections.unmodifiableCollection(_groups.values());
 	}
 	
 	public VirtualItemTemplate getTemplate(VirtualSlot slot, int itemId, int enchant, int costVISPoint)
