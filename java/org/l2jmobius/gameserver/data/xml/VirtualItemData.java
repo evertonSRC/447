@@ -37,6 +37,7 @@ import org.l2jmobius.gameserver.config.IllusoryEquipmentConfig;
 import org.l2jmobius.gameserver.config.ServerConfig;
 import org.l2jmobius.gameserver.data.holders.VirtualItemEntry;
 import org.l2jmobius.gameserver.data.holders.VirtualItemGroup;
+import org.l2jmobius.gameserver.model.actor.enums.player.VirtualSlot;
 
 /**
  * @author Mobius
@@ -50,28 +51,10 @@ public class VirtualItemData implements IXmlReader
 	
 	static
 	{
-		registerVirtualSlot("r_hand_virtual", 1);
-		registerVirtualSlot("l_hand_virtual", 2);
-		registerVirtualSlot("head_virtual", 3);
-		registerVirtualSlot("chest_virtual", 4);
-		registerVirtualSlot("legs_virtual", 5);
-		registerVirtualSlot("gloves_virtual", 6);
-		registerVirtualSlot("feet_virtual", 7);
-		registerVirtualSlot("back_virtual", 8);
-		registerVirtualSlot("hair_virtual", 9);
-		registerVirtualSlot("hair2_virtual", 10);
-		registerVirtualSlot("face_virtual", 11);
-		registerVirtualSlot("underwear_virtual", 12);
-		registerVirtualSlot("belt_virtual", 13);
-		registerVirtualSlot("brooch_virtual", 14);
-		registerVirtualSlot("agathion_virtual", 15);
-		registerVirtualSlot("talisman_virtual", 16);
-		registerVirtualSlot("bracelet_virtual", 17);
-		registerVirtualSlot("ring1_virtual", 18);
-		registerVirtualSlot("ring2_virtual", 19);
-		registerVirtualSlot("ear1_virtual", 20);
-		registerVirtualSlot("ear2_virtual", 21);
-		registerVirtualSlot("neck_virtual", 22);
+		for (VirtualSlot slot : VirtualSlot.values())
+		{
+			registerVirtualSlot(slot.getAlias(), slot.getId());
+		}
 	}
 	
 	protected VirtualItemData()

@@ -195,7 +195,9 @@ import org.l2jmobius.gameserver.model.actor.holders.player.RankingHistoryDataHol
 import org.l2jmobius.gameserver.model.actor.holders.player.Shortcut;
 import org.l2jmobius.gameserver.model.actor.holders.player.Shortcuts;
 import org.l2jmobius.gameserver.model.actor.holders.player.SubClassHolder;
-import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquipmentHolder;
+import org.l2jmobius.gameserver.model.actor.enums.player.VirtualSlot;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquipment;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
 import org.l2jmobius.gameserver.model.actor.instance.AirShip;
 import org.l2jmobius.gameserver.model.actor.instance.Boat;
 import org.l2jmobius.gameserver.model.actor.instance.ControlTower;
@@ -1060,7 +1062,7 @@ public class Player extends Playable
 	private final RankingHistory _rankingHistory;
 
 	private int _virtualPoints = 0;
-	private final Map<Integer, VirtualEquipmentHolder> _virtualEquipment = new ConcurrentHashMap<>();
+	private final VirtualEquipment _virtualEquipment = new VirtualEquipment();
 	
 	private final List<QuestTimer> _questTimers = new ArrayList<>();
 	private final List<TimerHolder<?>> _timerHolders = new ArrayList<>();
@@ -1515,33 +1517,58 @@ public class Player extends Playable
 		return _virtualPoints;
 	}
 	
-	public Map<Integer, VirtualEquipmentHolder> getVirtualEquipment()
+	public VirtualEquipment getVirtualEquipment()
 	{
-		return Collections.unmodifiableMap(_virtualEquipment);
+		return _virtualEquipment;
 	}
 	
-	public VirtualEquipmentHolder getVirtualEquipment(int slot)
+	public VirtualEquippedItem getVirtualEquipment(VirtualSlot slot)
 	{
 		return _virtualEquipment.get(slot);
 	}
 	
-	public void setVirtualEquipment(int slot, int itemId, int enchant, int indexMain, int indexSub)
+	public void setVirtualEquipment(VirtualSlot slot, VirtualEquippedItem item)
 	{
+		if (item == null)
+		{
+			removeVirtualEquipment(slot);
+			return;
+		}
+		
+		_virtualEquipment.set(slot, item);
+		VirtualEquipmentDAO.getInstance().saveSlot(getObjectId(), slot, item);
+	}
+	
+	public void setVirtualEquipment(int slotId, int itemId, int enchant, int indexMain, int indexSub)
+	{
+		final VirtualSlot slot = VirtualSlot.fromId(slotId);
+		if (slot == null)
+		{
+			return;
+		}
+		
 		if (itemId <= 0)
 		{
 			removeVirtualEquipment(slot);
 			return;
 		}
 		
-		final VirtualEquipmentHolder holder = new VirtualEquipmentHolder(slot, itemId, enchant, indexMain, indexSub);
-		_virtualEquipment.put(slot, holder);
-		VirtualEquipmentDAO.getInstance().saveSlot(getObjectId(), holder);
+		setVirtualEquipment(slot, new VirtualEquippedItem(itemId, enchant, indexMain, indexSub));
 	}
 	
-	public void removeVirtualEquipment(int slot)
+	public void removeVirtualEquipment(VirtualSlot slot)
 	{
 		_virtualEquipment.remove(slot);
 		VirtualEquipmentDAO.getInstance().deleteSlot(getObjectId(), slot);
+	}
+	
+	public void removeVirtualEquipment(int slotId)
+	{
+		final VirtualSlot slot = VirtualSlot.fromId(slotId);
+		if (slot != null)
+		{
+			removeVirtualEquipment(slot);
+		}
 	}
 	
 	private void setVirtualPoints(int points, boolean store)
@@ -8284,7 +8311,7 @@ public class Player extends Playable
 	private void storeVirtualItemData()
 	{
 		VirtualPointsDAO.getInstance().setPoints(getObjectId(), _virtualPoints);
-		VirtualEquipmentDAO.getInstance().saveAll(getObjectId(), _virtualEquipment.values());
+		VirtualEquipmentDAO.getInstance().saveAll(getObjectId(), _virtualEquipment.getItems());
 	}
 	
 	private void storeCharBase()
