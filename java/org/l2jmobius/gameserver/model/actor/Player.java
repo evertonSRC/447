@@ -1064,7 +1064,8 @@ public class Player extends Playable
 
 	private int _virtualPoints = 0;
 	private final VirtualEquipment _virtualEquipment = new VirtualEquipment();
-	private final Set<Integer> _virtualItemSkillIds = ConcurrentHashMap.newKeySet();
+	private final Map<Integer, Set<String>> _virtualItemSkillSources = new ConcurrentHashMap<>();
+	private final Map<Integer, Integer> _virtualItemSkillLevels = new ConcurrentHashMap<>();
 	
 	private final List<QuestTimer> _questTimers = new ArrayList<>();
 	private final List<TimerHolder<?>> _timerHolders = new ArrayList<>();
@@ -1668,8 +1669,10 @@ public class Player extends Playable
 	private void applyVirtualItemSkills()
 	{
 		final Map<Integer, Skill> desiredSkills = new HashMap<>();
-		for (VirtualEquippedItem item : _virtualEquipment.getItems().values())
+		final Map<Integer, Set<String>> desiredSources = new HashMap<>();
+		for (Entry<VirtualSlot, VirtualEquippedItem> entry : _virtualEquipment.getItems().entrySet())
 		{
+			final VirtualEquippedItem item = entry.getValue();
 			final ItemTemplate template = ItemData.getInstance().getTemplate(item.getItemId());
 			if ((template == null) || !template.hasSkills())
 			{
@@ -1677,17 +1680,19 @@ public class Player extends Playable
 			}
 			
 			final int enchantLevel = getVirtualItemEnchantLevel(template, item.getEnchant());
-			collectVirtualItemSkills(template, enchantLevel, desiredSkills);
+			collectVirtualItemSkills(template, enchantLevel, desiredSkills, desiredSources, entry.getKey(), item);
 		}
 		
 		boolean update = false;
-		final Set<Integer> desiredSkillIds = desiredSkills.keySet();
-		for (Integer skillId : new HashSet<>(_virtualItemSkillIds))
+		final Map<Integer, Set<String>> appliedSources = new HashMap<>();
+		final Map<Integer, Set<String>> previousSources = new HashMap<>(_virtualItemSkillSources);
+		final Map<Integer, Integer> previousLevels = new HashMap<>(_virtualItemSkillLevels);
+		for (Integer skillId : new HashSet<>(_virtualItemSkillSources.keySet()))
 		{
-			if (!desiredSkillIds.contains(skillId) && !isSkillProvidedByEquippedItems(skillId))
+			if (!desiredSkills.containsKey(skillId) && !isSkillProvidedByEquippedItems(skillId))
 			{
 				final Skill skill = getKnownSkill(skillId);
-				if (skill != null)
+				if ((skill != null) && skill.getLevel() == previousLevels.getOrDefault(skillId, skill.getLevel()))
 				{
 					removeSkill(skill, false, skill.isPassive());
 					update = true;
@@ -1698,20 +1703,29 @@ public class Player extends Playable
 		for (Skill skill : desiredSkills.values())
 		{
 			final Skill knownSkill = getKnownSkill(skill.getId());
-			if ((knownSkill == null) || (knownSkill.getLevel() < skill.getLevel()) || (_virtualItemSkillIds.contains(skill.getId()) && (knownSkill.getLevel() != skill.getLevel())))
+			final boolean wasVirtualSkill = previousSources.containsKey(skill.getId());
+			if ((knownSkill == null) || (knownSkill.getLevel() < skill.getLevel()) || (wasVirtualSkill && (knownSkill.getLevel() == previousLevels.getOrDefault(skill.getId(), skill.getLevel())) && (knownSkill.getLevel() != skill.getLevel())))
 			{
-				if ((knownSkill != null) && _virtualItemSkillIds.contains(skill.getId()))
+				if (wasVirtualSkill && (knownSkill != null))
 				{
 					removeSkill(knownSkill, false, knownSkill.isPassive());
 				}
 				
 				addSkill(skill, false);
 				update = true;
+				appliedSources.put(skill.getId(), desiredSources.get(skill.getId()));
+				_virtualItemSkillLevels.put(skill.getId(), skill.getLevel());
+			}
+			else if (wasVirtualSkill && (knownSkill.getLevel() == previousLevels.getOrDefault(skill.getId(), knownSkill.getLevel())))
+			{
+				appliedSources.put(skill.getId(), desiredSources.get(skill.getId()));
+				_virtualItemSkillLevels.put(skill.getId(), knownSkill.getLevel());
 			}
 		}
 		
-		_virtualItemSkillIds.clear();
-		_virtualItemSkillIds.addAll(desiredSkillIds);
+		_virtualItemSkillSources.clear();
+		_virtualItemSkillSources.putAll(appliedSources);
+		_virtualItemSkillLevels.keySet().retainAll(appliedSources.keySet());
 		
 		if (update)
 		{
@@ -1719,14 +1733,14 @@ public class Player extends Playable
 		}
 	}
 	
-	private void collectVirtualItemSkills(ItemTemplate template, int enchantLevel, Map<Integer, Skill> target)
+	private void collectVirtualItemSkills(ItemTemplate template, int enchantLevel, Map<Integer, Skill> target, Map<Integer, Set<String>> sources, VirtualSlot slot, VirtualEquippedItem item)
 	{
 		final List<ItemSkillHolder> normalSkills = template.getSkills(ItemSkillType.NORMAL);
 		if (normalSkills != null)
 		{
 			for (ItemSkillHolder holder : normalSkills)
 			{
-				addVirtualItemSkill(holder, target);
+				addVirtualItemSkill(holder, target, sources, slot, item);
 			}
 		}
 		
@@ -1737,13 +1751,13 @@ public class Player extends Playable
 			{
 				if (enchantLevel >= holder.getValue())
 				{
-					addVirtualItemSkill(holder, target);
+					addVirtualItemSkill(holder, target, sources, slot, item);
 				}
 			}
 		}
 	}
 	
-	private void addVirtualItemSkill(ItemSkillHolder holder, Map<Integer, Skill> target)
+	private void addVirtualItemSkill(ItemSkillHolder holder, Map<Integer, Skill> target, Map<Integer, Set<String>> sources, VirtualSlot slot, VirtualEquippedItem item)
 	{
 		final Skill skill = holder.getSkill();
 		if (skill == null)
@@ -1761,6 +1775,9 @@ public class Player extends Playable
 		{
 			target.put(skill.getId(), skill);
 		}
+		
+		final String sourceKey = slot.getId() + ":" + item.getItemId();
+		sources.computeIfAbsent(skill.getId(), key -> ConcurrentHashMap.newKeySet()).add(sourceKey);
 	}
 	
 	private boolean isSkillProvidedByEquippedItems(int skillId)
