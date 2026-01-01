@@ -102,24 +102,47 @@ public class VirtualItemService
 			return false;
 		}
 		
+		logDebug(player, "applySelection indexMain=" + holder.getIndexMain() + " indexSub=" + holder.getIndexSub() + " itemId=" + holder.getItemId() + " slot=" + holder.getSlot() + " sendUpdates=" + sendUpdates);
+		
 		if ((oldHolder != null) && (oldHolder.getItemId() == holder.getItemId()) && (oldHolder.getEnchant() == holder.getEnchant()) && (oldHolder.getSlot() == holder.getSlot()))
 		{
 			player.getVariables().set(SELECTION_PREFIX + holder.getIndexMain(), holder.getIndexSub());
+			logDebug(player, "Selection already applied; updating stored selection only.");
 			return true;
 		}
 		
-		if (!canApply(player, holder))
+		if (isSkill(holder))
 		{
-			return false;
+			final Skill skill = SkillData.getInstance().getSkill(holder.getItemId(), holder.getEnchant());
+			if (skill == null)
+			{
+				logWarn(player, "Missing skill for selection itemId=" + holder.getItemId() + " enchant=" + holder.getEnchant());
+				player.sendMessage("Illusory skill is not available.");
+				return false;
+			}
+		}
+		else
+		{
+			if (ItemData.getInstance().getTemplate(holder.getItemId()) == null)
+			{
+				logWarn(player, "Missing item template for selection itemId=" + holder.getItemId());
+				player.sendMessage("Illusory item is not available.");
+				return false;
+			}
+			
+			final Item equipped = getEquippedItemForSlot(player, holder.getSlot());
+			if (equipped == null)
+			{
+				logWarn(player, "No equipped item for slot=" + holder.getSlot() + " when applying selection.");
+				player.sendMessage("You need to equip an item in the selected slot.");
+				return false;
+			}
 		}
 		
 		final boolean applied = applyEffect(player, holder, sendUpdates);
 		if (!applied)
 		{
-			if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
-			{
-				LOGGER.info(getLogPrefix(player) + "Failed to apply virtual item indexMain=" + holder.getIndexMain() + " indexSub=" + holder.getIndexSub());
-			}
+			logWarn(player, "Failed to apply virtual item indexMain=" + holder.getIndexMain() + " indexSub=" + holder.getIndexSub());
 			return false;
 		}
 		
@@ -139,11 +162,13 @@ public class VirtualItemService
 		}
 		
 		player.getVariables().set(SELECTION_PREFIX + holder.getIndexMain(), holder.getIndexSub());
+		logDebug(player, "Selection stored successfully.");
 		return true;
 	}
 	
 	public static void resetSelections(Player player, boolean sendUpdates)
 	{
+		logDebug(player, "Resetting selections; sendUpdates=" + sendUpdates);
 		for (VirtualItemHolder holder : getSelectedVirtualItems(player))
 		{
 			removeEffect(player, holder, sendUpdates);
@@ -155,10 +180,12 @@ public class VirtualItemService
 		}
 		
 		player.getVariables().set(PlayerVariables.ILLUSORY_POINTS_USED, 0);
+		logDebug(player, "Selections reset complete.");
 	}
 	
 	public static void reapplySelections(Player player)
 	{
+		logDebug(player, "Reapplying selections on enter world.");
 		for (VirtualItemHolder holder : getSelectedVirtualItems(player))
 		{
 			if (!applyEffect(player, holder, false) && IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
@@ -175,6 +202,12 @@ public class VirtualItemService
 		final Skill skill = SkillData.getInstance().getSkill(holder.getItemId(), holder.getEnchant());
 		if (isSkill(holder))
 		{
+			if (skill == null)
+			{
+				logWarn(player, "Missing skill data for itemId=" + holder.getItemId() + " enchant=" + holder.getEnchant());
+				return false;
+			}
+			logDebug(player, "Applying skill effect itemId=" + holder.getItemId() + " enchant=" + holder.getEnchant() + " sendUpdates=" + sendUpdates);
 			player.addSkill(skill, true);
 			if (sendUpdates)
 			{
@@ -186,9 +219,11 @@ public class VirtualItemService
 		final Item baseItem = getEquippedItemForSlot(player, holder.getSlot());
 		if (baseItem == null)
 		{
+			logWarn(player, "No equipped item found for slot=" + holder.getSlot() + " while applying visual.");
 			return false;
 		}
 		
+		logDebug(player, "Applying visualId=" + holder.getItemId() + " to item=" + baseItem.getId() + " slot=" + holder.getSlot());
 		baseItem.setVisualId(holder.getItemId());
 		if (sendUpdates)
 		{
@@ -204,7 +239,13 @@ public class VirtualItemService
 	{
 		if (isSkill(holder))
 		{
+			logDebug(player, "Removing skill effect itemId=" + holder.getItemId() + " enchant=" + holder.getEnchant() + " sendUpdates=" + sendUpdates);
 			final Skill skill = SkillData.getInstance().getSkill(holder.getItemId(), holder.getEnchant());
+			if (skill == null)
+			{
+				logWarn(player, "Missing skill data for removal itemId=" + holder.getItemId() + " enchant=" + holder.getEnchant());
+				return;
+			}
 			player.removeSkill(skill, false, true);
 			if (sendUpdates)
 			{
@@ -216,9 +257,11 @@ public class VirtualItemService
 		final Item baseItem = getEquippedItemForSlot(player, holder.getSlot());
 		if (baseItem == null)
 		{
+			logWarn(player, "No equipped item found for slot=" + holder.getSlot() + " while removing visual.");
 			return;
 		}
 		
+		logDebug(player, "Clearing visualId from item=" + baseItem.getId() + " slot=" + holder.getSlot());
 		baseItem.setVisualId(0);
 		if (sendUpdates)
 		{
@@ -237,21 +280,6 @@ public class VirtualItemService
 			return null;
 		}
 		return player.getInventory().getPaperdollItemByBodyPart(bodyPart);
-	}
-	
-	private static boolean canApply(Player player, VirtualItemHolder holder)
-	{
-		if (isSkill(holder))
-		{
-			return SkillData.getInstance().getSkill(holder.getItemId(), holder.getEnchant()) != null;
-		}
-		
-		if (ItemData.getInstance().getTemplate(holder.getItemId()) == null)
-		{
-			return false;
-		}
-		
-		return getEquippedItemForSlot(player, holder.getSlot()) != null;
 	}
 	
 	private static boolean isSkill(VirtualItemHolder holder)
@@ -274,5 +302,18 @@ public class VirtualItemService
 	private static String getLogPrefix(Player player)
 	{
 		return "[IllusoryEquipment] playerId=" + player.getObjectId() + " ";
+	}
+	
+	private static void logDebug(Player player, String message)
+	{
+		if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
+		{
+			LOGGER.info(getLogPrefix(player) + message);
+		}
+	}
+	
+	private static void logWarn(Player player, String message)
+	{
+		LOGGER.warning(getLogPrefix(player) + message);
 	}
 }

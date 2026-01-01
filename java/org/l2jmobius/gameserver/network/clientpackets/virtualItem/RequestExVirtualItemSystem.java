@@ -62,7 +62,7 @@ public class RequestExVirtualItemSystem extends ClientPacket
 		_type = readByte();
 		_selectIndexMain = readInt();
 		_selectIndexSub = readInt();
-		_selectSlot = readInt();
+		_selectSlot = readLong();
 		readShort(); // Always 26
 		// _indexMain = readInt();
 		// _indexSub = readInt();
@@ -104,34 +104,39 @@ public class RequestExVirtualItemSystem extends ClientPacket
 		
 		if (!IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_ENABLED)
 		{
+			logDebug(player, "System disabled; ignoring request type=" + _type + " indexMain=" + _selectIndexMain + " indexSub=" + _selectIndexSub + " slot=" + _selectSlot);
 			return;
 		}
+		
+		logDebug(player, "Received request type=" + _type + " indexMain=" + _selectIndexMain + " indexSub=" + _selectIndexSub + " slot=" + _selectSlot);
 		
 		boolean result = true;
 		switch (_type)
 		{
 			case 1:
 			{
+				logDebug(player, "Loading existing virtual selections.");
 				_updateVisItemInfo.addAll(VirtualItemService.getSelectedVirtualItems(player));
 				break;
 			}
 			case 2:
 			{
+				logDebug(player, "Resetting virtual selections.");
 				VirtualItemService.resetSelections(player, true);
 				break;
 			}
 			case 3:
 			{
+				logDebug(player, "Applying selection.");
 				final VirtualItemHolder holder = VirtualItemData.getInstance().getVirtualItem(_selectIndexMain, _selectIndexSub);
 				if (holder == null)
 				{
-					if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
-					{
-						LOGGER.info("[IllusoryEquipment] Player " + player.getName() + " tried to select missing indexMain=" + _selectIndexMain + " indexSub=" + _selectIndexSub);
-					}
+					logWarn(player, "Missing virtual item data for indexMain=" + _selectIndexMain + " indexSub=" + _selectIndexSub);
+					player.sendMessage("Illusory equipment selection is not available.");
 					result = false;
 					break;
 				}
+				logDebug(player, "Selected holder itemId=" + holder.getItemId() + " enchant=" + holder.getEnchant() + " slot=" + holder.getSlot() + " cost=" + holder.getCostVISPoint());
 				
 				final Map<Integer, Integer> selections = VirtualItemService.getSelections(player);
 				final int previousIndexSub = selections.getOrDefault(_selectIndexMain, 0);
@@ -141,17 +146,11 @@ public class RequestExVirtualItemSystem extends ClientPacket
 				final int totalCost = VirtualItemService.calculateTotalCost(selections);
 				final int acquiredPoints = player.getVariables().getInt(PlayerVariables.ILLUSORY_POINTS_ACQUIRED, 0);
 				final int maxPoints = Math.min(acquiredPoints, IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT);
-				if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
-				{
-					LOGGER.info("[IllusoryEquipment] Player " + player.getName() + " applying indexMain=" + _selectIndexMain + " indexSub=" + _selectIndexSub + " cost=" + holder.getCostVISPoint() + " totalCost=" + totalCost + " maxPoints=" + maxPoints);
-				}
+				logDebug(player, "Validation points: totalCost=" + totalCost + " maxPoints=" + maxPoints + " acquired=" + acquiredPoints);
 				if (totalCost > maxPoints)
 				{
 					player.sendPacket(SystemMessageId.YOU_CANNOT_COMPLETE_THE_PURCHASE_AS_YOU_DO_NOT_HAVE_ENOUGH_ILLUSORY_EQUIPMENT_POINTS);
-					if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
-					{
-						LOGGER.info("[IllusoryEquipment] Player " + player.getName() + " insufficient points: totalCost=" + totalCost + " maxPoints=" + maxPoints);
-					}
+					logWarn(player, "Insufficient points: totalCost=" + totalCost + " maxPoints=" + maxPoints);
 					result = false;
 					break;
 				}
@@ -159,17 +158,21 @@ public class RequestExVirtualItemSystem extends ClientPacket
 				result = VirtualItemService.applySelection(player, holder, previousHolder, true);
 				if (!result)
 				{
-					if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
-					{
-						LOGGER.info("[IllusoryEquipment] Player " + player.getName() + " failed to apply indexMain=" + _selectIndexMain + " indexSub=" + _selectIndexSub);
-					}
+					logWarn(player, "Failed to apply selection indexMain=" + _selectIndexMain + " indexSub=" + _selectIndexSub);
 					player.sendMessage("Unable to apply illusory equipment selection.");
 					break;
 				}
 				
+				logDebug(player, "Selection applied. Updating used points and client info.");
 				player.getVariables().set(PlayerVariables.ILLUSORY_POINTS_USED, totalCost);
 				player.sendPacket(SystemMessageId.THE_SELECTED_ILLUSORY_EFFECT_IS_APPLIED);
 				_updateVisItemInfo.addAll(VirtualItemService.getSelectedVirtualItems(player));
+				break;
+			}
+			default:
+			{
+				logWarn(player, "Unhandled request type=" + _type);
+				result = false;
 				break;
 			}
 		}
@@ -180,5 +183,18 @@ public class RequestExVirtualItemSystem extends ClientPacket
 		final int maxPoints = Math.min(acquiredPoints, IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_POINTS_LIMIT);
 		player.sendPacket(new ExVirtualItemSystemBaseInfo(player));
 		player.sendPacket(new ExVirtualItemSystemPointInfo(player, Math.max(0, maxPoints - usedPoints)));
+	}
+	
+	private static void logDebug(Player player, String message)
+	{
+		if (IllusoryEquipmentConfig.ILLUSORY_EQUIPMENT_EVENT_DEBUG_ENABLED)
+		{
+			LOGGER.info("[IllusoryEquipment] player=" + player.getName() + " playerId=" + player.getObjectId() + " " + message);
+		}
+	}
+	
+	private static void logWarn(Player player, String message)
+	{
+		LOGGER.warning("[IllusoryEquipment] player=" + player.getName() + " playerId=" + player.getObjectId() + " " + message);
 	}
 }
