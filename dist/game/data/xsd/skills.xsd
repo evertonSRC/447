@@ -847,6 +847,7 @@
 																</xs:complexType>
 															</xs:element>
 															<xs:element name="ignoreShieldDefence" type="xs:boolean" />
+															<xs:element name="excludeDots" type="xs:boolean" />
 															<xs:element name="criticalChance">
 																<xs:complexType mixed="true">
 																	<xs:sequence minOccurs="0">
