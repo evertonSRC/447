@@ -1312,6 +1312,7 @@ public class Skill
 		
 		if (debuffShieldContext.isConsumed())
 		{
+			debuffShieldContext.markBlocked();
 			return true;
 		}
 		
@@ -1322,6 +1323,7 @@ public class Skill
 		}
 		
 		debuffShieldContext.markConsumed();
+		debuffShieldContext.markBlocked();
 		
 		if (info.getEffected() != null)
 		{
@@ -1333,6 +1335,10 @@ public class Skill
 			}
 		}
 		
+		if (LOGGER.isLoggable(Level.FINE))
+		{
+			LOGGER.fine("Debuff shield blocked effect " + effect + " from skill " + this + " on " + info.getEffected());
+		}
 		return true;
 	}
 	
@@ -1341,6 +1347,7 @@ public class Skill
 		private final BuffInfo _shieldInfo;
 		private final DebuffShieldEffect _debuffShield;
 		private boolean _consumed;
+		private boolean _blocked;
 		
 		private DebuffShieldContext(BuffInfo shieldInfo, DebuffShieldEffect debuffShield)
 		{
@@ -1366,6 +1373,16 @@ public class Skill
 		public void markConsumed()
 		{
 			_consumed = true;
+		}
+		
+		public boolean hasBlockedEffects()
+		{
+			return _blocked;
+		}
+		
+		public void markBlocked()
+		{
+			_blocked = true;
 		}
 	}
 	
@@ -1509,6 +1526,11 @@ public class Skill
 			applyEffectScope(pvpOrPveEffectScope, info, instant, addContinuousEffects, debuffShieldContext);
 			if (addContinuousEffects)
 			{
+				if ((debuffShieldContext != null) && debuffShieldContext.hasBlockedEffects() && info.getEffects().isEmpty())
+				{
+					return;
+				}
+				
 				// Aura skills reset the abnormal time.
 				final BuffInfo existingInfo = _operateType.isAura() ? effected.getEffectList().getBuffInfoBySkillId(skillId) : null;
 				if (existingInfo != null)
@@ -1558,6 +1580,11 @@ public class Skill
 			applyEffectScope(EffectScope.SELF, info, instant, addContinuousEffects, debuffShieldContext);
 			if (addContinuousEffects)
 			{
+				if ((debuffShieldContext != null) && debuffShieldContext.hasBlockedEffects() && info.getEffects().isEmpty())
+				{
+					return;
+				}
+				
 				// Aura skills reset the abnormal time.
 				final BuffInfo existingInfo = _operateType.isAura() ? effector.getEffectList().getBuffInfoBySkillId(skillId) : null;
 				if (existingInfo != null)
@@ -1592,6 +1619,11 @@ public class Skill
 			
 			final DebuffShieldContext debuffShieldContext = getDebuffShieldContext(info.getEffected());
 			applyEffectScope(EffectScope.GENERAL, info, false, true, debuffShieldContext);
+			if ((debuffShieldContext != null) && debuffShieldContext.hasBlockedEffects() && info.getEffects().isEmpty())
+			{
+				return;
+			}
+			
 			effector.getEffectList().add(info);
 		}
 	}
