@@ -387,6 +387,18 @@ public class EffectMasterHandler
 		EffectHandler.getInstance().registerHandler("INTscaling", INTscaling::new);
 		EffectHandler.getInstance().registerHandler("WITscaling", WITscaling::new);
 		EffectHandler.getInstance().registerHandler("MENscaling", MENscaling::new);
+		EffectHandler.getInstance().registerHandler("patkscaling", PAtkScaling::new);
+		EffectHandler.getInstance().registerHandler("pdefscaling", PDefScaling::new);
+		EffectHandler.getInstance().registerHandler("accscaling", AccScaling::new);
+		EffectHandler.getInstance().registerHandler("evasscaling", EvasScaling::new);
+		EffectHandler.getInstance().registerHandler("cratescaling", CrateScaling::new);
+		EffectHandler.getInstance().registerHandler("atkspdscaling", AtkSpdScaling::new);
+		EffectHandler.getInstance().registerHandler("movescaling", MoveScaling::new);
+		EffectHandler.getInstance().registerHandler("matkscaling", MAtkScaling::new);
+		EffectHandler.getInstance().registerHandler("mdefscaling", MDefScaling::new);
+		EffectHandler.getInstance().registerHandler("mevasscaling", MEvasScaling::new);
+		EffectHandler.getInstance().registerHandler("mcratescaling", MCrateScaling::new);
+		EffectHandler.getInstance().registerHandler("castscaling", CastScaling::new);
 		EffectHandler.getInstance().registerHandler("StatBonusSkillCritical", StatBonusSkillCritical::new);
 		EffectHandler.getInstance().registerHandler("StatBonusSpeed", StatBonusSpeed::new);
 		EffectHandler.getInstance().registerHandler("StatByMoveType", StatByMoveType::new);
