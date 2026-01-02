@@ -83,7 +83,6 @@
 		<effects>
 			<effect name="DebuffShieldCast">
 				<maxCharges>3</maxCharges>
-				<excludeDots>true</excludeDots>
 			</effect>
 		</effects>
 	</skill>
