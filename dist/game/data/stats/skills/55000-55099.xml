@@ -82,7 +82,7 @@
 		<reuseDelay>10000</reuseDelay>
 		<effects>
 			<effect name="DebuffShieldCast">
-				<charges>3</charges>
+				<maxCharges>3</maxCharges>
 				<excludeDots>true</excludeDots>
 			</effect>
 		</effects>
