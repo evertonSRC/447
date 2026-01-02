@@ -61,4 +61,30 @@
 			</effect>
 		</effects>
 	</skill>
+	<skill id="55032" toLevel="1" name="Debuff Shield">
+		<!-- Test skill: applies a debuff shield with charges. -->
+		<icon>icon.skill1075</icon>
+		<operateType>A2</operateType>
+		<targetType>TARGET</targetType>
+		<abnormalLevel>1</abnormalLevel>
+		<abnormalTime>20</abnormalTime>
+		<abnormalType>BUFF_SPECIAL_AURA</abnormalType>
+		<affectScope>SINGLE</affectScope>
+		<basicProperty>NONE</basicProperty>
+		<castRange>400</castRange>
+		<effectPoint>100</effectPoint>
+		<effectRange>900</effectRange>
+		<hitTime>2000</hitTime>
+		<isMagic>1</isMagic> <!-- Magic Skill -->
+		<magicCriticalRate>-5</magicCriticalRate>
+		<magicLevel>1</magicLevel>
+		<mpConsume>10</mpConsume>
+		<reuseDelay>10000</reuseDelay>
+		<effects>
+			<effect name="DebuffShieldCast">
+				<charges>3</charges>
+				<excludeDots>true</excludeDots>
+			</effect>
+		</effects>
+	</skill>
 </list>
