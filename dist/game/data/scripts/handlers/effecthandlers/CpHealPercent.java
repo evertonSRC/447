@@ -19,6 +19,7 @@ package handlers.effecthandlers;
 import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.stats.Stat;
@@ -59,9 +60,10 @@ public class CpHealPercent extends AbstractEffect
 		
 		double amount = 0;
 		final double power = _power;
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
 		final boolean full = (power == 100.0);
 		
-		amount = full ? effected.getMaxCp() : (effected.getMaxCp() * power) / 100.0;
+		amount = (full ? effected.getMaxCp() : (effected.getMaxCp() * power) / 100.0) + scalingBonus;
 		if ((item != null) && (item.isPotion() || item.isElixir()))
 		{
 			amount += effected.getStat().getValue(Stat.ADDITIONAL_POTION_CP, 0);

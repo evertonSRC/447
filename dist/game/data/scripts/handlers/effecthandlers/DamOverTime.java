@@ -24,6 +24,7 @@ import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.stats.Formulas;
@@ -58,7 +59,8 @@ public class DamOverTime extends AbstractEffect
 			final boolean mcrit = Formulas.calcCrit(skill.getMagicCriticalRate(), effector, effected, skill);
 			if (mcrit)
 			{
-				double damage = _power * 10; // Tests show that 10 times HP DOT is taken during magic critical.
+				final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+				double damage = (_power + scalingBonus) * 10; // Tests show that 10 times HP DOT is taken during magic critical.
 				
 				if (!_canKill && (damage >= (effected.getCurrentHp() - 1)))
 				{
@@ -84,7 +86,8 @@ public class DamOverTime extends AbstractEffect
 			return false;
 		}
 		
-		double damage = _power * getTicksMultiplier();
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+		double damage = (_power + scalingBonus) * getTicksMultiplier();
 		if (damage >= (effected.getCurrentHp() - 1))
 		{
 			if (skill.isToggle())

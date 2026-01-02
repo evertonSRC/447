@@ -23,46 +23,48 @@ package handlers.effecthandlers;
 import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
-import org.l2jmobius.gameserver.model.effects.SkillScaling;
-import org.l2jmobius.gameserver.model.item.instance.Item;
-import org.l2jmobius.gameserver.model.skill.Skill;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.model.effects.SkillScalingEffect;
+import org.l2jmobius.gameserver.model.stats.Stat;
+import org.l2jmobius.gameserver.util.MathUtil;
 
 /**
- * Mana Damage Over Time effect implementation.
+ * @author Mobius
  */
-public class ManaDamOverTime extends AbstractEffect
+public abstract class AbstractCasterStatScaling extends AbstractEffect implements SkillScalingEffect
 {
-	private final double _power;
+	private static final int MAX_PERCENT = 1000;
 	
-	public ManaDamOverTime(StatSet params)
+	private final Stat _stat;
+	private final double _percent;
+	
+	protected AbstractCasterStatScaling(StatSet params, Stat stat)
 	{
-		_power = params.getDouble("power", 0);
-		setTicks(params.getInt("ticks"));
+		_stat = stat;
+		final double percent = params.getDouble("value", params.getDouble("amount", 0));
+		_percent = MathUtil.clamp(percent, 0, MAX_PERCENT);
 		
-		if (params.contains("amount"))
+		if (params.contains("power"))
 		{
-			throw new IllegalArgumentException(getClass().getSimpleName() + " should use power instead of amount.");
+			throw new IllegalArgumentException(getClass().getSimpleName() + " should use value instead of power.");
 		}
 	}
 	
 	@Override
-	public boolean onActionTime(Creature effector, Creature effected, Skill skill, Item item)
+	public boolean isInstant()
 	{
-		if (effected.isDead())
+		return true;
+	}
+	
+	@Override
+	public int getScalingBonus(Creature effector)
+	{
+		if (effector == null)
 		{
-			return false;
+			return 0;
 		}
 		
-		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
-		final double manaDam = (_power + scalingBonus) * getTicksMultiplier();
-		if ((manaDam > effected.getCurrentMp()) && skill.isToggle())
-		{
-			effected.sendPacket(SystemMessageId.YOUR_SKILL_WAS_DEACTIVATED_DUE_TO_LACK_OF_MP);
-			return false;
-		}
-		
-		effected.reduceCurrentMp(manaDam);
-		return skill.isToggle();
+		final double statValue = effector.getStat().getValue(_stat);
+		final double bonus = Math.floor(statValue * (_percent / 100d));
+		return (int) MathUtil.clamp((long) bonus, 0, Integer.MAX_VALUE);
 	}
 }

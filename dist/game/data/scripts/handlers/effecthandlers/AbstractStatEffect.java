@@ -31,8 +31,10 @@ import org.l2jmobius.gameserver.model.conditions.ConditionUsingItemType;
 import org.l2jmobius.gameserver.model.conditions.ConditionUsingMagicWeapon;
 import org.l2jmobius.gameserver.model.conditions.ConditionUsingTwoHandWeapon;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.type.ArmorType;
 import org.l2jmobius.gameserver.model.item.type.WeaponType;
+import org.l2jmobius.gameserver.model.skill.BuffInfo;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.skill.enums.StatModifierType;
 import org.l2jmobius.gameserver.model.stats.Stat;
@@ -144,6 +146,18 @@ public abstract class AbstractStatEffect extends AbstractEffect
 	@Override
 	public void pump(Creature effected, Skill skill)
 	{
+		applyEffect(effected, skill, _amount);
+	}
+	
+	@Override
+	public void pump(Creature effector, Creature effected, Skill skill, BuffInfo info)
+	{
+		final int scalingBonus = info != null ? info.getCasterScalingBonus() : SkillScaling.calculateBonus(effector, skill);
+		applyEffect(effected, skill, _amount + scalingBonus);
+	}
+	
+	private void applyEffect(Creature effected, Skill skill, double amount)
+	{
 		if (!_conditions.isEmpty())
 		{
 			for (Condition cond : _conditions)
@@ -159,12 +173,12 @@ public abstract class AbstractStatEffect extends AbstractEffect
 		{
 			case DIFF:
 			{
-				effected.getStat().mergeAdd(_addStat, _amount);
+				effected.getStat().mergeAdd(_addStat, amount);
 				break;
 			}
 			case PER:
 			{
-				effected.getStat().mergeMul(_mulStat, (_amount / 100) + 1);
+				effected.getStat().mergeMul(_mulStat, (amount / 100) + 1);
 				break;
 			}
 		}

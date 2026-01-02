@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import org.l2jmobius.gameserver.config.PlayerConfig;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.item.instance.Item;
+import org.l2jmobius.gameserver.model.skill.BuffInfo;
 import org.l2jmobius.gameserver.model.skill.Skill;
 
 /**
@@ -161,6 +162,11 @@ public abstract class AbstractEffect
 	 */
 	public void pump(Creature effected, Skill skill)
 	{
+	}
+	
+	public void pump(Creature effector, Creature effected, Skill skill, BuffInfo info)
+	{
+		pump(effected, skill);
 	}
 	
 	/**

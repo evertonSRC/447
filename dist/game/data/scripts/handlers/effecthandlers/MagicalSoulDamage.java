@@ -22,6 +22,7 @@ import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.enums.ShotType;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.Skill;
@@ -92,7 +93,8 @@ public class MagicalSoulDamage extends AbstractEffect
 		final boolean bss = skill.useSpiritShot() && effector.isChargedShot(ShotType.BLESSED_SPIRITSHOTS);
 		final boolean mcrit = Formulas.calcCrit(skill.getMagicCriticalRate(), effector, effected, skill);
 		final double mAtk = effector.getMAtk() * (1 + (chargedSouls * 0.022));
-		final double damage = Formulas.calcMagicDam(effector, effected, skill, mAtk, _power, effected.getMDef(), sps, bss, mcrit);
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+		final double damage = Formulas.calcMagicDam(effector, effected, skill, mAtk, _power + scalingBonus, effected.getMDef(), sps, bss, mcrit);
 		
 		effector.doAttack(damage, effected, skill, false, false, mcrit, false);
 	}
