@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import org.l2jmobius.gameserver.handler.EffectHandler;
 
+import handlers.effecthandlers.AccScaling;
 import handlers.effecthandlers.*;
 
 /**
