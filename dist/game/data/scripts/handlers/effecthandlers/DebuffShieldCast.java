@@ -41,7 +41,7 @@ public class DebuffShieldCast extends AbstractEffect implements DebuffShieldEffe
 	
 	public DebuffShieldCast(StatSet params)
 	{
-		_maxCharges = params.getInt("charges", 3);
+		_maxCharges = params.getInt("maxCharges", params.getInt("charges", 3));
 		_excludeDots = params.getBoolean("excludeDots", true);
 	}
 	
