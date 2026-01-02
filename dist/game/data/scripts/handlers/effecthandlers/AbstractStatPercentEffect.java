@@ -23,6 +23,8 @@ package handlers.effecthandlers;
 import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
+import org.l2jmobius.gameserver.model.skill.BuffInfo;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.skill.enums.StatModifierType;
 import org.l2jmobius.gameserver.model.stats.Stat;
@@ -55,5 +57,12 @@ public class AbstractStatPercentEffect extends AbstractEffect
 	public void pump(Creature effected, Skill skill)
 	{
 		effected.getStat().mergeMul(_stat, (_amount / 100) + 1);
+	}
+	
+	@Override
+	public void pump(Creature effector, Creature effected, Skill skill, BuffInfo info)
+	{
+		final int scalingBonus = info != null ? info.getCasterScalingBonus() : SkillScaling.calculateBonus(effector, skill);
+		effected.getStat().mergeMul(_stat, ((_amount + scalingBonus) / 100) + 1);
 	}
 }

@@ -31,6 +31,7 @@ import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.actor.enums.creature.Race;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.enums.ShotType;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.AbnormalType;
@@ -217,7 +218,8 @@ public class PhysicalDamage extends AbstractEffect
 				}
 			}
 			
-			final double power = ((_power * (hasAbnormalType ? _abnormalPowerMod : 1)) + effector.getStat().getValue(Stat.SKILL_POWER_ADD, 0));
+			final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+			final double power = (((_power + scalingBonus) * (hasAbnormalType ? _abnormalPowerMod : 1)) + effector.getStat().getValue(Stat.SKILL_POWER_ADD, 0));
 			final double weaponMod = effector.getAttackType().isRanged() ? 70 : 77;
 			final double rangedBonus = effector.getAttackType().isRanged() ? attack + power : 0;
 			final double critMod = critical ? Formulas.calcCritDamage(effector, effected, skill) : 1;

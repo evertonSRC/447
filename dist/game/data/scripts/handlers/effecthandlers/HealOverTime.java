@@ -23,6 +23,7 @@ package handlers.effecthandlers;
 import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.AbnormalType;
 import org.l2jmobius.gameserver.model.skill.Skill;
@@ -57,6 +58,7 @@ public class HealOverTime extends AbstractEffect
 		
 		double hp = effected.getCurrentHp();
 		final double maxhp = effected.getMaxRecoverableHp();
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
 		
 		// Not needed to set the HP and send update packet if player is already at max HP
 		if (_power > 0)
@@ -74,7 +76,7 @@ public class HealOverTime extends AbstractEffect
 			}
 		}
 		
-		double power = _power;
+		double power = _power + scalingBonus;
 		if ((item != null) && (item.isPotion() || item.isElixir()))
 		{
 			power += effected.getStat().getValue(Stat.ADDITIONAL_POTION_HP, 0) / getTicks();
@@ -100,7 +102,8 @@ public class HealOverTime extends AbstractEffect
 	{
 		if (effected.isPlayer() && (getTicks() > 0) && (skill.getAbnormalType() == AbnormalType.HP_RECOVER))
 		{
-			double power = _power;
+			final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+			double power = _power + scalingBonus;
 			if ((item != null) && (item.isPotion() || item.isElixir()))
 			{
 				final double bonus = effected.getStat().getValue(Stat.ADDITIONAL_POTION_HP, 0);

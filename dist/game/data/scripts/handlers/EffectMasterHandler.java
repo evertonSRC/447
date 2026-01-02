@@ -381,6 +381,12 @@ public class EffectMasterHandler
 		EffectHandler.getInstance().registerHandler("StatAddForLevel", StatAddForLevel::new);
 		EffectHandler.getInstance().registerHandler("StatAddForMp", StatAddForMp::new);
 		EffectHandler.getInstance().registerHandler("StatAddForStat", StatAddForStat::new);
+		EffectHandler.getInstance().registerHandler("STRscaling", STRscaling::new);
+		EffectHandler.getInstance().registerHandler("DEXscaling", DEXscaling::new);
+		EffectHandler.getInstance().registerHandler("CONscaling", CONscaling::new);
+		EffectHandler.getInstance().registerHandler("INTscaling", INTscaling::new);
+		EffectHandler.getInstance().registerHandler("WITscaling", WITscaling::new);
+		EffectHandler.getInstance().registerHandler("MENscaling", MENscaling::new);
 		EffectHandler.getInstance().registerHandler("StatBonusSkillCritical", StatBonusSkillCritical::new);
 		EffectHandler.getInstance().registerHandler("StatBonusSpeed", StatBonusSpeed::new);
 		EffectHandler.getInstance().registerHandler("StatByMoveType", StatByMoveType::new);

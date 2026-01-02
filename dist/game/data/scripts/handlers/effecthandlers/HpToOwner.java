@@ -20,6 +20,7 @@ import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.stats.Formulas;
@@ -54,7 +55,8 @@ public class HpToOwner extends AbstractEffect
 			final boolean mcrit = Formulas.calcCrit(skill.getMagicCriticalRate(), effector, effected, skill);
 			if (mcrit)
 			{
-				final double damage = _power * 10; // Tests show that 10 times HP DOT is taken during magic critical.
+				final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+				final double damage = (_power + scalingBonus) * 10; // Tests show that 10 times HP DOT is taken during magic critical.
 				effected.reduceCurrentHp(damage, effector, skill, true, false, true, false);
 			}
 		}
@@ -74,7 +76,8 @@ public class HpToOwner extends AbstractEffect
 			return false;
 		}
 		
-		final double damage = _power * getTicksMultiplier();
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+		final double damage = (_power + scalingBonus) * getTicksMultiplier();
 		
 		effector.doAttack(damage, effected, skill, true, false, false, false);
 		if (_stealAmount > 0)

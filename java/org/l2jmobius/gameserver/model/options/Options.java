@@ -180,7 +180,7 @@ public class Options
 				else
 				{
 					effect.continuousInstant(info.getEffector(), info.getEffected(), info.getSkill(), info.getItem());
-					effect.pump(player, info.getSkill());
+					effect.pump(info.getEffector(), info.getEffected(), info.getSkill(), info);
 					if (effect.canStart(info.getEffector(), info.getEffected(), info.getSkill()))
 					{
 						info.addEffect(effect);

@@ -24,6 +24,7 @@ import org.l2jmobius.gameserver.config.custom.FakePlayersConfig;
 import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.model.skill.enums.StatModifierType;
@@ -74,11 +75,14 @@ public class RealDamage extends AbstractEffect
 			return;
 		}
 		
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+		final double power = _power + scalingBonus;
+		
 		// Calculate resistance.
 		final double damage;
 		if (_mode == StatModifierType.DIFF)
 		{
-			damage = _power - (_power * (Math.min(effected.getStat().getMulValue(Stat.REAL_DAMAGE_RESIST, 1), 1.8) - 1));
+			damage = power - (power * (Math.min(effected.getStat().getMulValue(Stat.REAL_DAMAGE_RESIST, 1), 1.8) - 1));
 		}
 		else // PER
 		{
@@ -97,11 +101,11 @@ public class RealDamage extends AbstractEffect
 			
 			if (levelDifference >= 3)
 			{
-				damage = ((effected.getCurrentHp() * _power) / 100) / levelDifference;
+				damage = ((effected.getCurrentHp() * power) / 100) / levelDifference;
 			}
 			else
 			{
-				damage = (effected.getCurrentHp() * _power) / 100;
+				damage = (effected.getCurrentHp() * power) / 100;
 			}
 		}
 		

@@ -19,6 +19,7 @@ package handlers.effecthandlers;
 import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.Skill;
 import org.l2jmobius.gameserver.network.SystemMessageId;
@@ -52,7 +53,8 @@ public class HpByLevel extends AbstractEffect
 	public void instant(Creature effector, Creature effected, Skill skill, Item item)
 	{
 		// Calculation
-		final double abs = _power;
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+		final double abs = _power + scalingBonus;
 		final double absorb = ((effector.getCurrentHp() + abs) > effector.getMaxHp() ? effector.getMaxHp() : (effector.getCurrentHp() + abs));
 		final int restored = (int) (absorb - effector.getCurrentHp());
 		effector.setCurrentHp(absorb);

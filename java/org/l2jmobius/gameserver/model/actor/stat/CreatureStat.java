@@ -1062,11 +1062,11 @@ public class CreatureStat
 									{
 										if (effect.delayPump())
 										{
-											delayedPumps.add(new DelayedPumpHolder(effect, info.getEffected(), info.getSkill()));
+											delayedPumps.add(new DelayedPumpHolder(effect, info));
 										}
 										else
 										{
-											effect.pump(info.getEffected(), info.getSkill());
+											effect.pump(info.getEffector(), info.getEffected(), info.getSkill(), info);
 										}
 									}
 								}
@@ -1083,11 +1083,11 @@ public class CreatureStat
 									{
 										if (effect.delayPump())
 										{
-											delayedPumps.add(new DelayedPumpHolder(effect, info.getEffected(), info.getSkill()));
+											delayedPumps.add(new DelayedPumpHolder(effect, info));
 										}
 										else
 										{
-											effect.pump(info.getEffected(), info.getSkill());
+											effect.pump(info.getEffector(), info.getEffected(), info.getSkill(), info);
 										}
 									}
 								}
@@ -1104,11 +1104,11 @@ public class CreatureStat
 									{
 										if (effect.delayPump())
 										{
-											delayedPumps.add(new DelayedPumpHolder(effect, info.getEffected(), info.getSkill()));
+											delayedPumps.add(new DelayedPumpHolder(effect, info));
 										}
 										else
 										{
-											effect.pump(info.getEffected(), info.getSkill());
+											effect.pump(info.getEffector(), info.getEffected(), info.getSkill(), info);
 										}
 									}
 								}
@@ -1120,7 +1120,8 @@ public class CreatureStat
 						{
 							for (DelayedPumpHolder holder : delayedPumps)
 							{
-								holder.getEffect().pump(holder.getEffected(), holder.getSkill());
+								final BuffInfo info = holder.getInfo();
+								holder.getEffect().pump(info.getEffector(), info.getEffected(), info.getSkill(), info);
 							}
 						}
 						
@@ -1138,7 +1139,7 @@ public class CreatureStat
 										{
 											if (effect.canStart(info.getEffector(), info.getEffected(), info.getSkill()) && effect.canPump(_creature, _creature, info.getSkill()))
 											{
-												effect.pump(_creature, info.getSkill());
+												effect.pump(info.getEffector(), _creature, info.getSkill(), info);
 											}
 										}
 									}

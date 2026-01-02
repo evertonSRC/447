@@ -22,6 +22,7 @@ import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectFlag;
 import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.enums.ShotType;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.item.type.CrystalType;
@@ -75,7 +76,8 @@ public class Heal extends AbstractEffect
 			return;
 		}
 		
-		double amount = _power;
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+		double amount = _power + scalingBonus;
 		if ((item != null) && (item.isPotion() || item.isElixir()))
 		{
 			amount += effected.getStat().getValue(Stat.ADDITIONAL_POTION_HP, 0);
