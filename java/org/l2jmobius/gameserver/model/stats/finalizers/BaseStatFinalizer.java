@@ -18,8 +18,11 @@ package org.l2jmobius.gameserver.model.stats.finalizers;
 
 import java.util.OptionalDouble;
 
+import org.l2jmobius.gameserver.data.xml.ItemData;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.actor.Player;
+import org.l2jmobius.gameserver.model.actor.holders.player.VirtualEquippedItem;
+import org.l2jmobius.gameserver.model.item.ItemTemplate;
 import org.l2jmobius.gameserver.model.stats.BaseStat;
 import org.l2jmobius.gameserver.model.stats.IStatFunction;
 import org.l2jmobius.gameserver.model.stats.Stat;
@@ -44,6 +47,15 @@ public class BaseStatFinalizer implements IStatFunction
 			
 			// Armor sets calculation
 			baseValue += player.getInventory().getPaperdollCache().getBaseStatValue(player, BaseStat.valueOf(stat));
+
+			for (VirtualEquippedItem virtualItem : player.getVirtualEquipmentItems())
+			{
+				final ItemTemplate template = ItemData.getInstance().getTemplate(virtualItem.getItemId());
+				if (template != null)
+				{
+					baseValue += template.getStats(stat, 0);
+				}
+			}
 			
 			// Henna calculation
 			baseValue += player.getHennaValue(BaseStat.valueOf(stat));
