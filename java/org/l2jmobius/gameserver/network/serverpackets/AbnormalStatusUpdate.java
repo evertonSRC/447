@@ -54,9 +54,9 @@ public class AbnormalStatusUpdate extends ServerPacket
 			if ((info != null) && info.isInUse())
 			{
 				final Skill skill = info.getSkill();
-				buffer.writeInt(info.getDisplaySkillId());
-				buffer.writeShort(info.getDisplaySkillLevel());
-				buffer.writeShort(info.getDisplaySkillSubLevel());
+				buffer.writeInt(skill.getDisplayId());
+				buffer.writeShort(skill.getDisplayLevel());
+				buffer.writeShort(skill.getSubLevel());
 				buffer.writeInt(skill.getAbnormalType().getClientId());
 				writeOptionalInt(skill.isAura() || skill.isToggle() ? -1 : info.getTime(), buffer);
 			}
