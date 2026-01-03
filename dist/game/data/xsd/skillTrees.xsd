@@ -111,6 +111,7 @@
 									<xs:attribute name="skillLevel" type="xs:positiveInteger" use="required" />
 									<xs:attribute name="skillName" type="xs:normalizedString" use="required" />
 									<xs:attribute name="tooltiptext" type="xs:normalizedString" />
+									<xs:attribute name="skillicon" type="xs:normalizedString" />
 									<xs:attribute name="treeId" type="xs:positiveInteger" />
 									<xs:attribute name="row" type="xs:positiveInteger" />
 									<xs:attribute name="column" type="xs:positiveInteger" />

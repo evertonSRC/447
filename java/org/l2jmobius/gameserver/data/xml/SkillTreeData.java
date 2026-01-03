@@ -2175,6 +2175,20 @@ public class SkillTreeData implements IXmlReader
 				resSkillCount++;
 			}
 		}
+
+		int fourthClassSkillCount = 0;
+		int fourthClassIconCount = 0;
+		for (Map<Long, SkillLearn> fourthClassSkillTree : _fourthClassSkillTrees.values())
+		{
+			for (SkillLearn skill : fourthClassSkillTree.values())
+			{
+				fourthClassSkillCount++;
+				if (!skill.getSkillIcon().isEmpty())
+				{
+					fourthClassIconCount++;
+				}
+			}
+		}
 		
 		final String className = getClass().getSimpleName();
 		LOGGER.info(className + ": Loaded " + classSkillTreeCount + " Class skills for " + _classSkillTrees.size() + " class skill trees.");
@@ -2196,6 +2210,7 @@ public class SkillTreeData implements IXmlReader
 		LOGGER.info(className + ": Loaded " + _fourthClassSkillTrees.size() + " fourth class skill trees.");
 		LOGGER.info(className + ": Loaded " + _awakeningSaveSkillTree.size() + " class awaken save skills.");
 		LOGGER.info(className + ": Loaded " + revelationSkillTreeCount + " Revelation skills.");
+		LOGGER.fine(className + ": Fourth class skill icons set for " + fourthClassIconCount + " of " + fourthClassSkillCount + " skills.");
 		
 		final int commonSkills = _commonSkillTree.size();
 		if (commonSkills > 0)
