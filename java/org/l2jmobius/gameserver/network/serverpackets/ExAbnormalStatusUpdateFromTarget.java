@@ -59,9 +59,9 @@ public class ExAbnormalStatusUpdateFromTarget extends ServerPacket
 		for (BuffInfo info : _effects)
 		{
 			final Skill skill = info.getSkill();
-			buffer.writeInt(skill.getDisplayId());
-			buffer.writeShort(skill.getDisplayLevel());
-			buffer.writeShort(skill.getSubLevel());
+			buffer.writeInt(info.getDisplaySkillId());
+			buffer.writeShort(info.getDisplaySkillLevel());
+			buffer.writeShort(info.getDisplaySkillSubLevel());
 			buffer.writeShort(skill.getAbnormalType().getClientId());
 			writeOptionalInt(skill.isAura() ? -1 : info.getTime(), buffer);
 			buffer.writeInt(info.getEffectorObjectId());

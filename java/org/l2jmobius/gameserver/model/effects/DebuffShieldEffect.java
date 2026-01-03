@@ -20,6 +20,8 @@
  */
 package org.l2jmobius.gameserver.model.effects;
 
+import org.l2jmobius.gameserver.model.skill.BuffInfo;
+
 /**
  * Effect interface for debuff shield casts.
  */
@@ -45,4 +47,13 @@ public interface DebuffShieldEffect
 	 * @return remaining charges after consumption, or {@code -1} if no charge was consumed.
 	 */
 	int consumeCharge();
+	
+	/**
+	 * Updates the displayed icon for the debuff shield if supported.
+	 * @param info the buff info instance
+	 * @param currentCharges the remaining charges
+	 */
+	default void updateIcon(BuffInfo info, int currentCharges)
+	{
+	}
 }

@@ -60,6 +60,12 @@ public class BuffInfo
 	/** The effects. */
 	private final List<AbstractEffect> _effects = new ArrayList<>(1);
 	
+	// Display overrides (icon/level swaps without changing the underlying skill).
+	private int _displaySkillId;
+	private int _displaySkillLevel;
+	private int _displaySkillSubLevel;
+	private boolean _hasDisplaySkillOverride;
+	
 	// Tasks
 	/** Effect tasks for ticks. */
 	private Map<AbstractEffect, EffectTaskInfo> _tasks;
@@ -159,6 +165,60 @@ public class BuffInfo
 	public Skill getSkill()
 	{
 		return _skill;
+	}
+	
+	/**
+	 * @return the display skill ID for client icon rendering.
+	 */
+	public int getDisplaySkillId()
+	{
+		return _hasDisplaySkillOverride ? _displaySkillId : _skill.getDisplayId();
+	}
+	
+	/**
+	 * @return the display skill level for client icon rendering.
+	 */
+	public int getDisplaySkillLevel()
+	{
+		return _hasDisplaySkillOverride ? _displaySkillLevel : _skill.getDisplayLevel();
+	}
+	
+	/**
+	 * @return the display skill sub level for client icon rendering.
+	 */
+	public int getDisplaySkillSubLevel()
+	{
+		return _hasDisplaySkillOverride ? _displaySkillSubLevel : _skill.getSubLevel();
+	}
+	
+	/**
+	 * @return {@code true} if a display override is active.
+	 */
+	public boolean hasDisplaySkillOverride()
+	{
+		return _hasDisplaySkillOverride;
+	}
+	
+	/**
+	 * Overrides the skill data used for client-side icon rendering.
+	 * @param displaySkillId the display skill id
+	 * @param displaySkillLevel the display skill level
+	 * @param displaySkillSubLevel the display skill sub level
+	 */
+	public void setDisplaySkillOverride(int displaySkillId, int displaySkillLevel, int displaySkillSubLevel)
+	{
+		_displaySkillId = displaySkillId;
+		_displaySkillLevel = displaySkillLevel;
+		_displaySkillSubLevel = displaySkillSubLevel;
+		_hasDisplaySkillOverride = true;
+	}
+	
+	/**
+	 * Clears any display override, restoring the skill's own display data.
+	 */
+	public void clearDisplaySkillOverride()
+	{
+		_hasDisplaySkillOverride = false;
 	}
 	
 	public int getCasterScalingBonus()

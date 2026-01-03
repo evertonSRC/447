@@ -1324,6 +1324,7 @@ public class Skill
 		
 		debuffShieldContext.markConsumed();
 		debuffShieldContext.markBlocked();
+		debuffShieldContext.getDebuffShield().updateIcon(debuffShieldContext.getShieldInfo(), remaining);
 		
 		if (info.getEffected() != null)
 		{
