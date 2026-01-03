@@ -20,6 +20,7 @@ import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.enums.ShotType;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.skill.AbnormalType;
@@ -83,7 +84,8 @@ public class Backstab extends AbstractEffect
 		
 		final boolean ss = skill.useSoulShot() && (effector.isChargedShot(ShotType.SOULSHOTS) || effector.isChargedShot(ShotType.BLESSED_SOULSHOTS));
 		final byte shld = Formulas.calcShldUse(effector, effected);
-		double damage = Formulas.calcBlowDamage(effector, effected, skill, true, _power, shld, ss);
+		final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+		double damage = Formulas.calcBlowDamage(effector, effected, skill, true, _power + scalingBonus, shld, ss);
 		
 		if (Formulas.calcCrit(_criticalChance, effector, effected, skill))
 		{

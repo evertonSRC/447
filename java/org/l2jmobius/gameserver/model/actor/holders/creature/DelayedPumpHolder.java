@@ -20,9 +20,8 @@
  */
 package org.l2jmobius.gameserver.model.actor.holders.creature;
 
-import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
-import org.l2jmobius.gameserver.model.skill.Skill;
+import org.l2jmobius.gameserver.model.skill.BuffInfo;
 
 /**
  * @author Mobius
@@ -30,14 +29,12 @@ import org.l2jmobius.gameserver.model.skill.Skill;
 public class DelayedPumpHolder
 {
 	private final AbstractEffect _effect;
-	private final Creature _effected;
-	private final Skill _skill;
+	private final BuffInfo _info;
 	
-	public DelayedPumpHolder(AbstractEffect effect, Creature effected, Skill skill)
+	public DelayedPumpHolder(AbstractEffect effect, BuffInfo info)
 	{
 		_effect = effect;
-		_effected = effected;
-		_skill = skill;
+		_info = info;
 	}
 	
 	public AbstractEffect getEffect()
@@ -45,13 +42,8 @@ public class DelayedPumpHolder
 		return _effect;
 	}
 	
-	public Creature getEffected()
+	public BuffInfo getInfo()
 	{
-		return _effected;
-	}
-	
-	public Skill getSkill()
-	{
-		return _skill;
+		return _info;
 	}
 }

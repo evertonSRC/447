@@ -34,6 +34,7 @@ import org.l2jmobius.gameserver.model.actor.Player;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectTaskInfo;
 import org.l2jmobius.gameserver.model.effects.EffectTickTask;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.options.Options;
 import org.l2jmobius.gameserver.model.skill.enums.SkillFinishType;
@@ -55,6 +56,7 @@ public class BuffInfo
 	private final Creature _effector;
 	private final Creature _effected;
 	private final Skill _skill;
+	private final int _casterScalingBonus;
 	/** The effects. */
 	private final List<AbstractEffect> _effects = new ArrayList<>(1);
 	
@@ -92,6 +94,7 @@ public class BuffInfo
 		_effector = effector;
 		_effected = effected;
 		_skill = skill;
+		_casterScalingBonus = SkillScaling.calculateBonus(effector, skill);
 		_abnormalTime = Formulas.calcEffectAbnormalTime(effector, effected, skill);
 		_periodStartTicks = GameTimeTaskManager.getInstance().getGameTicks();
 		_hideStartMessage = hideStartMessage;
@@ -156,6 +159,11 @@ public class BuffInfo
 	public Skill getSkill()
 	{
 		return _skill;
+	}
+	
+	public int getCasterScalingBonus()
+	{
+		return _casterScalingBonus;
 	}
 	
 	/**

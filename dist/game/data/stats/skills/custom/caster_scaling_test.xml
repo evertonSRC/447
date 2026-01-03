@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<list xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../xsd/skills.xsd">
+	<skill id="99000" toLevel="1" name="Test STR Scaling P. Atk">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="PhysicalAttack">
+				<amount>100</amount>
+				<mode>DIFF</mode>
+			</effect>
+			<effect name="STRscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99001" toLevel="1" name="Test DEX Scaling Move Speed">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="Speed">
+				<amount>20</amount>
+				<mode>DIFF</mode>
+			</effect>
+			<effect name="DEXscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99002" toLevel="1" name="Test INT Scaling DoT">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="DamOverTime">
+				<power>10</power>
+				<ticks>10</ticks>
+			</effect>
+			<effect name="INTscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99003" toLevel="1" name="Test STR Scaling Hit">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="PhysicalDamage">
+				<power>100</power>
+			</effect>
+			<effect name="STRscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99004" toLevel="1" name="Test PDef Scaling Buff">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="PhysicalDefence">
+				<amount>100</amount>
+				<mode>DIFF</mode>
+			</effect>
+			<effect name="pdefscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99005" toLevel="1" name="Test Move Speed Scaling Buff">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="Speed">
+				<amount>20</amount>
+				<mode>DIFF</mode>
+			</effect>
+			<effect name="movescaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99006" toLevel="1" name="Test Atk Speed Scaling Buff">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="PhysicalAttackSpeed">
+				<amount>100</amount>
+				<mode>DIFF</mode>
+			</effect>
+			<effect name="atkspdscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99007" toLevel="1" name="Test MAtk Scaling DoT">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="DamOverTime">
+				<power>10</power>
+				<ticks>10</ticks>
+			</effect>
+			<effect name="matkscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+	<skill id="99008" toLevel="1" name="Test PAtk Scaling Hit">
+		<icon>icon.skill0000</icon>
+		<operateType>A2</operateType>
+		<effects>
+			<effect name="PhysicalDamage">
+				<power>100</power>
+			</effect>
+			<effect name="patkscaling">
+				<value>1</value>
+			</effect>
+		</effects>
+	</skill>
+</list>

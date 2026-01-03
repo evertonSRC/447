@@ -28,6 +28,7 @@ import org.l2jmobius.gameserver.model.StatSet;
 import org.l2jmobius.gameserver.model.actor.Creature;
 import org.l2jmobius.gameserver.model.effects.AbstractEffect;
 import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.effects.SkillScaling;
 import org.l2jmobius.gameserver.model.item.enums.ShotType;
 import org.l2jmobius.gameserver.model.item.instance.Item;
 import org.l2jmobius.gameserver.model.item.type.WeaponType;
@@ -174,7 +175,8 @@ public class PhysicalDamageWeaponBonus extends AbstractEffect
 			// Skill specific mods.
 			final double weaponMod = effector.getAttackType().isRanged() ? 70 : 77;
 			final double weaponBonus = _weaponBonus.containsKey(effector.getAttackType()) ? _weaponBonus.get(effector.getAttackType()).doubleValue() : 1d;
-			final double power = _power + effector.getStat().getValue(Stat.SKILL_POWER_ADD, 0);
+			final int scalingBonus = SkillScaling.calculateBonus(effector, skill);
+			final double power = _power + scalingBonus + effector.getStat().getValue(Stat.SKILL_POWER_ADD, 0);
 			final double rangedBonus = effector.getAttackType().isRanged() ? attack + power : 0;
 			final double critMod = critical ? Formulas.calcCritDamage(effector, effected, skill) : 1;
 			double ssmod = 1;
