@@ -363,7 +363,7 @@ public class EffectList
 			}
 			else
 			{
-				_owner.sendPacket(new ShortBuffStatusUpdate(info.getDisplaySkillId(), info.getDisplaySkillLevel(), info.getDisplaySkillSubLevel(), info.getTime()));
+				_owner.sendPacket(new ShortBuffStatusUpdate(info.getSkill().getId(), info.getSkill().getLevel(), info.getSkill().getSubLevel(), info.getTime()));
 			}
 		}
 	}

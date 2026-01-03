@@ -61,9 +61,9 @@ public class ExOlympiadSpelledInfo extends ServerPacket
 		{
 			if ((info != null) && info.isInUse())
 			{
-				buffer.writeInt(info.getDisplaySkillId());
-				buffer.writeShort(info.getDisplaySkillLevel());
-				buffer.writeShort(info.getDisplaySkillSubLevel());
+				buffer.writeInt(info.getSkill().getDisplayId());
+				buffer.writeShort(info.getSkill().getDisplayLevel());
+				buffer.writeShort(0); // Sub level
 				buffer.writeInt(info.getSkill().getAbnormalType().getClientId());
 				writeOptionalInt(info.getSkill().isAura() ? -1 : info.getTime(), buffer);
 			}
