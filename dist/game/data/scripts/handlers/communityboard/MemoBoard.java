@@ -239,11 +239,12 @@ public class MemoBoard implements IWriteBoardHandler
 	{
 		final SkillLearn learn = cell.getTargetLearn();
 		final String name = learn.getName().isEmpty() ? ("Skill " + cell.getSkillId()) : learn.getName();
+		final String icon = resolveSkillIcon(learn);
 		final StringBuilder sb = new StringBuilder();
 		final boolean maxed = cell.getCurrentLevel() >= cell.getMaxLevel();
 		final String color = maxed ? "00AA00" : (cell.canLearn() ? "FFFFFF" : "999999");
 		sb.append("<font color=\"").append(color).append("\">").append(name).append("</font>");
-		sb.append("<br1>");
+		sb.append("<br1><center><img src=\"").append(escapeHtml(icon)).append("\" width=32 height=32></center><br1>");
 		sb.append("Lv ").append(Math.min(cell.getCurrentLevel(), cell.getMaxLevel())).append("/").append(cell.getMaxLevel()).append("<br1>");
 		sb.append("Req Lv: ").append(learn.getGetLevel()).append("<br1>");
 		if (learn.getPointsRequired() > 0)
@@ -300,6 +301,23 @@ public class MemoBoard implements IWriteBoardHandler
 			.replace(">", "&gt;")
 			.replace("\"", "&quot;")
 			.replace("'", "&#39;");
+	}
+
+	private String resolveSkillIcon(SkillLearn learn)
+	{
+		final String customIcon = learn.getSkillIcon();
+		if (customIcon != null && !customIcon.isEmpty())
+		{
+			return customIcon;
+		}
+
+		final Skill skill = SkillData.getInstance().getSkill(learn.getSkillId(), learn.getSkillLevel());
+		if (skill != null && skill.getIcon() != null && !skill.getIcon().isEmpty())
+		{
+			return skill.getIcon();
+		}
+
+		return "icon.etc_question_mark_i00";
 	}
 
 	private String buildPrereq(Collection<SkillHolder> prereqs)
