@@ -240,11 +240,23 @@ public class MemoBoard implements IWriteBoardHandler
 		final SkillLearn learn = cell.getTargetLearn();
 		final String name = learn.getName().isEmpty() ? ("Skill " + cell.getSkillId()) : learn.getName();
 		final String icon = resolveSkillIcon(learn);
+		final String iconTooltip = resolveSkillIconTooltip(learn, name, cell.getMaxLevel());
 		final StringBuilder sb = new StringBuilder();
 		final boolean maxed = cell.getCurrentLevel() >= cell.getMaxLevel();
 		final String color = maxed ? "00AA00" : (cell.canLearn() ? "FFFFFF" : "999999");
 		sb.append("<font color=\"").append(color).append("\">").append(name).append("</font>");
-		sb.append("<br1><center><img src=\"").append(escapeHtml(icon)).append("\" width=32 height=32></center><br1>");
+		sb.append("<br1><center>");
+		if (!iconTooltip.isEmpty())
+		{
+			sb.append("<button value=\"\" width=32 height=32 back=\"").append(escapeHtml(icon)).append("\" fore=\"").append(escapeHtml(icon)).append("\" tooltip=\"")
+				.append(escapeHtml(iconTooltip))
+				.append("\"></button>");
+		}
+		else
+		{
+			sb.append("<img src=\"").append(escapeHtml(icon)).append("\" width=32 height=32>");
+		}
+		sb.append("</center><br1>");
 		sb.append("Lv ").append(Math.min(cell.getCurrentLevel(), cell.getMaxLevel())).append("/").append(cell.getMaxLevel()).append("<br1>");
 		sb.append("Req Lv: ").append(learn.getGetLevel()).append("<br1>");
 		if (learn.getPointsRequired() > 0)
@@ -287,6 +299,28 @@ public class MemoBoard implements IWriteBoardHandler
 		sb.append("</td></tr></table>");
 
 		return sb.toString();
+	}
+
+	private String resolveSkillIconTooltip(SkillLearn learn, String defaultName, int maxLevel)
+	{
+		final String skillTooltip = learn.getSkillTooltip();
+		if (skillTooltip != null && !skillTooltip.isEmpty())
+		{
+			return skillTooltip;
+		}
+
+		final String tooltipText = learn.getTooltipText();
+		if (tooltipText != null && !tooltipText.isEmpty())
+		{
+			return tooltipText;
+		}
+
+		if (defaultName != null && !defaultName.isEmpty())
+		{
+			return defaultName + " Lv " + Math.min(learn.getSkillLevel(), maxLevel);
+		}
+
+		return "";
 	}
 
 	private String escapeHtml(String text)
